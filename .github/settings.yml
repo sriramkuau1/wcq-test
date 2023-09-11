@@ -109,6 +109,8 @@ teams:
     permission: pull
   - name: github-admins
     permission: admin
+  - name: cloud-data-centre-transformation-capability
+    permission: push
 
 branches:
   - name: main
