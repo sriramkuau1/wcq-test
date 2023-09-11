@@ -1,0 +1,76 @@
+name: Deploy Landing Zones
+
+on:
+  workflow_dispatch:
+    inputs:
+      landingzone:
+        type: string
+        description: Landing Zone to Deploy
+        required: true
+      subscriptionId:
+        type: string
+        description: Landing Zone Subscription Id
+        required: true
+      deploy:
+        type: boolean
+        description: Terraform Apply
+
+jobs:
+  tf_fmt:
+    name: Deploy Landing Zones
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Checkout Repo
+      uses: actions/checkout@v1
+      
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+
+    - name: Concat Vars
+      run: cat env/terraform.global.tfvars env/terraform.avd.lz.tfvars > temp.tfvars && cat temp.tfvars > terraform.avd.lz.tfvars
+
+    - name: Terraform init
+      id: init
+      run: terraform init
+      env:
+        ARM_CLIENT_ID: ${{ secrets.CLIENT_ID }}
+        ARM_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+        ARM_TENANT_ID:  ${{ secrets.TENANT_ID }}
+        ARM_SUBSCRIPTION_ID:  ${{ inputs.subscriptionId }}
+    
+    - name: Terraform validate
+      id: validate
+      run: terraform validate
+      env:
+        ARM_CLIENT_ID: ${{ secrets.CLIENT_ID }}
+        ARM_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+        ARM_TENANT_ID:  ${{ secrets.TENANT_ID }}
+        ARM_SUBSCRIPTION_ID:  ${{ inputs.subscriptionId }}
+    - name: Terraform workspace
+      id: workspace
+      run: terraform workspace select ${{ inputs.landingzone }}
+      env:
+        ARM_CLIENT_ID: ${{ secrets.CLIENT_ID }}
+        ARM_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+        ARM_TENANT_ID:  ${{ secrets.TENANT_ID }}
+        ARM_SUBSCRIPTION_ID:  ${{ inputs.subscriptionId }}
+ 
+    - name: Terraform plan
+      id: plan
+      run: terraform plan -var-file="terraform.${{ inputs.landingzone }}.lz.tfvars"
+      env:
+        ARM_CLIENT_ID: ${{ secrets.CLIENT_ID }}
+        ARM_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+        ARM_TENANT_ID:  ${{ secrets.TENANT_ID }}
+        ARM_SUBSCRIPTION_ID:  ${{ inputs.subscriptionId }}
+ 
+    - name: Terraform apply
+      if: ${{ inputs.deploy }}
+      id: apply
+      run: terraform apply -auto-approve -var-file="terraform.${{ inputs.landingzone }}.lz.tfvars"
+      env:
+        ARM_CLIENT_ID: ${{ secrets.CLIENT_ID }}
+        ARM_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+        ARM_TENANT_ID:  ${{ secrets.TENANT_ID }}
+        ARM_SUBSCRIPTION_ID:  ${{ inputs.subscriptionId }}

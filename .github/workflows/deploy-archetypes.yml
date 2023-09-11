@@ -1,0 +1,69 @@
+name: Deploy Management Groups and Policies
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy:
+        type: boolean
+        description: 'Terraform Apply'
+
+jobs:
+  tf_fmt:
+    name: Deploy Archetypes
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Checkout Repo
+      uses: actions/checkout@v1
+      
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+
+    - name: Concat Vars
+      run: cat env/terraform.global.tfvars env/terraform.archetypes.tfvars > temp.tfvars && cat temp.tfvars > terraform.archetypes.tfvars
+
+    - name: Terraform init
+      id: init
+      run: terraform init
+      env:
+        ARM_CLIENT_ID: ${{ secrets.CLIENT_ID }}
+        ARM_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+        ARM_TENANT_ID:  ${{ secrets.TENANT_ID }}
+        ARM_SUBSCRIPTION_ID:  ${{ secrets.CONN_SUB_ID }}
+    
+    - name: Terraform validate
+      id: validate
+      run: terraform validate
+      env:
+        ARM_CLIENT_ID: ${{ secrets.CLIENT_ID }}
+        ARM_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+        ARM_TENANT_ID:  ${{ secrets.TENANT_ID }}
+        ARM_SUBSCRIPTION_ID:  ${{ secrets.CONN_SUB_ID }}
+    
+    - name: Terraform workspace
+      id: workspace
+      run: terraform workspace select archetypes
+      env:
+        ARM_CLIENT_ID: ${{ secrets.CLIENT_ID }}
+        ARM_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+        ARM_TENANT_ID:  ${{ secrets.TENANT_ID }}
+        ARM_SUBSCRIPTION_ID:  ${{ secrets.CONN_SUB_ID }}
+ 
+    - name: Terraform plan
+      id: plan
+      run: terraform plan -parallelism=5 -var-file="terraform.archetypes.tfvars"
+      env:
+        ARM_CLIENT_ID: ${{ secrets.CLIENT_ID }}
+        ARM_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+        ARM_TENANT_ID:  ${{ secrets.TENANT_ID }}
+        ARM_SUBSCRIPTION_ID:  ${{ secrets.CONN_SUB_ID }}
+ 
+    - name: Terraform apply
+      if: ${{ inputs.deploy }}
+      id: apply
+      run: terraform apply -auto-approve -parallelism=5 -var-file="terraform.archetypes.tfvars"
+      env:
+        ARM_CLIENT_ID: ${{ secrets.CLIENT_ID }}
+        ARM_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+        ARM_TENANT_ID:  ${{ secrets.TENANT_ID }}
+        ARM_SUBSCRIPTION_ID:  ${{ secrets.CONN_SUB_ID }}
