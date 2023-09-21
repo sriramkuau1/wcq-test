@@ -1548,6 +1548,7 @@ locals {
     azure_cosmos_db_mongodb              = ["privatelink.mongo.cosmos.azure.com"]
     azure_cosmos_db_sql                  = ["privatelink.documents.azure.com"]
     azure_cosmos_db_table                = ["privatelink.table.cosmos.azure.com"]
+    azure_databricks                     = ["privatelink.azuredatabricks.net"]
     azure_data_factory                   = ["privatelink.datafactory.azure.net"]
     azure_data_factory_portal            = ["privatelink.adf.azure.com"]
     azure_data_health_data_services      = ["privatelink.azurehealthcareapis.com", "privatelink.dicom.azurehealthcareapis.com"]
@@ -1625,6 +1626,7 @@ locals {
     azure_cosmos_db_mongodb              = local.empty_string
     azure_cosmos_db_sql                  = local.empty_string
     azure_cosmos_db_table                = local.empty_string
+    azure_databricks                     = local.empty_string
     azure_data_explorer                  = local.empty_string
     azure_data_factory                   = local.empty_string
     azure_data_factory_portal            = local.empty_string
@@ -1993,6 +1995,7 @@ locals {
           azureCosmosMongoPrivateDnsZoneId              = "${local.private_dns_zone_prefix}privatelink.mongo.cosmos.azure.com"
           azureCosmosSQLPrivateDnsZoneId                = "${local.private_dns_zone_prefix}privatelink.documents.azure.com"
           azureCosmosTablePrivateDnsZoneId              = "${local.private_dns_zone_prefix}privatelink.table.cosmos.azure.com"
+          azureDataBricksPrivateDnsZoneId               = "${local.private_dns_zone_prefix}privatelink.azuredatabricks.net"
           azureDataFactoryPortalPrivateDnsZoneId        = "${local.private_dns_zone_prefix}privatelink.adf.azure.com"
           azureDataFactoryPrivateDnsZoneId              = "${local.private_dns_zone_prefix}privatelink.datafactory.azure.net"
           azureDiskAccessPrivateDnsZoneId               = "${local.private_dns_zone_prefix}privatelink.blob.core.windows.net"

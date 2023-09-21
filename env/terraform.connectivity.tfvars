@@ -107,6 +107,7 @@ configure_connectivity_resources = {
           azure_cosmos_db_mongodb              = true
           azure_cosmos_db_sql                  = true
           azure_cosmos_db_table                = true
+          azure_databricks                     = true
           azure_data_explorer                  = true
           azure_data_factory                   = true
           azure_data_factory_portal            = true

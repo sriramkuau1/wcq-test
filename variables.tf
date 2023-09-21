@@ -631,6 +631,7 @@ variable "configure_connectivity_resources" {
             azure_cosmos_db_mongodb              = optional(bool, true)
             azure_cosmos_db_sql                  = optional(bool, true)
             azure_cosmos_db_table                = optional(bool, true)
+            azure_dataricks                      = optional(bool, true)
             azure_data_explorer                  = optional(bool, true)
             azure_data_factory                   = optional(bool, true)
             azure_data_factory_portal            = optional(bool, true)
