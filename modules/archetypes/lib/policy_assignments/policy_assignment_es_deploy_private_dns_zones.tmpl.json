@@ -42,6 +42,9 @@
       "azureCosmosTablePrivateDnsZoneId": {
         "value": "${private_dns_zone_prefix}privatelink.table.cosmos.azure.com"
       },
+      "azureDataBricksPrivateDnsZoneId": {
+        "value": "${private_dns_zone_prefix}privatelink.azuredatabricks.net"
+      },
       "azureDataFactoryPrivateDnsZoneId": {
         "value": "${private_dns_zone_prefix}privatelink.datafactory.azure.net"
       },
