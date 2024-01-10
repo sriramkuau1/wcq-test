@@ -303,16 +303,6 @@ locals {
   }
 }
 
-# Configuration settings for resource type:
-#  - azurerm_key_vault_secret
-locals {
-  azurerm_key_vault_secret = {
-    name         = "vmlocalpassword"
-    key_vault_id = local.key_vault_resource_id
-    content_type = "Password"
-  }
-}
-
 # Generate the configuration output object for the identity module
 locals {
   module_output = {
@@ -453,18 +443,6 @@ locals {
         }
         managed_by_module = local.deploy_identity
       },
-    ]
-    azurerm_key_vault_secret = [
-      {
-        resource_name = local.azurerm_key_vault_secret.name
-        template = {
-          for key, value in local.azurerm_key_vault_secret :
-          key => value
-          if local.deploy_identity &&
-          key != "managed_by_module"
-        }
-        managed_by_module = local.deploy_identity
-      }
     ]
   }
 }

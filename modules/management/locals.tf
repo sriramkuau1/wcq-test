@@ -54,7 +54,6 @@ locals {
   deploy_monitoring_resources         = local.enabled && local.deploy_monitoring_settings
   deploy_resource_group               = local.deploy_monitoring_resources && local.existing_resource_group_name == local.empty_string
   deploy_network                      = local.deploy_monitoring_resources && local.settings.spoke_networks != local.empty_list
-  deploy_devops                       = local.deploy_monitoring_resources && local.deploy_network && local.settings.devopsagent.enabled
   deploy_log_analytics_workspace      = local.deploy_monitoring_resources && local.existing_log_analytics_workspace_resource_id == local.empty_string
   deploy_log_analytics_linked_service = local.deploy_monitoring_resources && local.link_log_analytics_to_automation_account
   deploy_automation_account           = local.deploy_monitoring_resources && local.existing_automation_account_resource_id == local.empty_string
@@ -441,71 +440,11 @@ locals{
   }
 }
 
-# Configuration settings for resource type:
-#  - azurerm_key_vault_secret
-locals {
-  azurerm_key_vault_secret = {
-    name         = local.settings.devopsagent.key_vault_secret
-    key_vault_id = local.settings.devopsagent.key_vault_id
-  }
-}
-
-# Configuration settings for resource type:
-#  - azurerm_network_interface
-locals {
-  azurerm_network_interface = {
-    resource_id                   = "${local.resource_group_resource_id.management}/providers/Microsoft.Network/networkInterfaces/${local.settings.devopsagent.vm_name_prefix}"
-    name                          = local.settings.devopsagent.vm_name_prefix
-    count                         = local.settings.devopsagent.quantity
-    resource_group_name           = local.management_resource_group_name.management
-    location                      = local.location
-    enable_accelerated_networking = true
-
-    ip_configuration = {
-      name                          = local.settings.devopsagent.vm_name_prefix
-      subnet_id                     = try("${local.virtual_network_resource_id[local.settings.devopsagent.vnet_identifier]}/subnets/${local.settings.devopsagent.subnet_identifier}", "")
-      private_ip_address_allocation = "Dynamic"
-    }
-  }
-}
-
-# Configuration settings for resource type:
-#  - azurerm_windows_virtual_machine
-locals {
-  azurerm_windows_virtual_machine = {
-    resource_id                = "${local.resource_group_resource_id.management}/providers/Microsoft.Compute/virtualMachines/${local.settings.devopsagent.vm_name_prefix}"
-    name                       = local.settings.devopsagent.vm_name_prefix
-    count                      = local.settings.devopsagent.quantity
-    resource_group_name        = local.management_resource_group_name.management
-    location                   = local.settings.devopsagent.location
-    size                       = local.settings.devopsagent.size
-    network_interface_ids      = local.azurerm_network_interface.resource_id
-    provision_vm_agent         = local.settings.devopsagent.provision_vm_agent
-    admin_username             = local.settings.devopsagent.admin_username
-    admin_password             = local.settings.devopsagent.key_vault_secret
-    encryption_at_host_enabled = false
-    tags                       = merge(local.tags, try(local.settings.devopsagent.tags, local.empty_map))
-
-    os_disk = {
-      name                 = local.settings.devopsagent.vm_name_prefix
-      caching              = "ReadWrite"
-      storage_account_type = "Premium_LRS"
-    }
-
-    source_image_reference = {
-      publisher = local.settings.devopsagent.publisher
-      offer     = local.settings.devopsagent.offer
-      sku       = local.settings.devopsagent.sku
-      version   = local.settings.devopsagent.version
-    }
-  }
-}
-
 # Configuration settings for the action groups:
 # - azurerm_monitor_action_group
 locals {
   azurerm_monitor_action_group = {
-    
+
     resource_id            = "${local.resource_group_resource_id["management"]}/providers/Microsoft.Insights/actiongroups/${local.settings.action_group_name}"
     name                   = "${local.settings.action_group_name}"
     resource_group_name    = local.resource_group_name["management"]
@@ -741,37 +680,6 @@ locals {
         managed_by_module = local.deploy_network
       }
     ]
-    azurerm_key_vault_secret = [
-      {
-        resource_name = local.azurerm_key_vault_secret.name
-        template = {
-          for key, value in local.azurerm_key_vault_secret :
-          key => value
-          if local.deploy_devops &&
-          key != "resource_id" &&
-          key != "managed_by_module"
-        }
-        managed_by_module = local.deploy_devops
-      }
-    ]
-    azurerm_network_interface = {
-      resource_id   = local.azurerm_network_interface.resource_id
-      template = {
-        for key, value in local.azurerm_network_interface :
-        key => value
-        if local.deploy_devops
-      }
-      managed_by_module = local.deploy_devops
-    }
-    azurerm_windows_virtual_machine = {
-      resource_id = local.azurerm_windows_virtual_machine.resource_id
-      template = {
-        for key, value in local.azurerm_windows_virtual_machine :
-        key => value
-        if local.deploy_devops
-      }
-      managed_by_module = local.deploy_devops
-    }
     azurerm_storage_account = [
       {
         resource_id   = local.storage_account_resource_id

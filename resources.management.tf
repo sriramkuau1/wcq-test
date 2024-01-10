@@ -94,7 +94,7 @@ resource "azurerm_network_security_group" "management" {
 
   # Optional resource attributes
   tags          = each.value.template.tags
-  
+
   # Dynamic configuration blocks
   dynamic "security_rule" {
     for_each = each.value.template.security_rule
@@ -131,7 +131,7 @@ resource "azurerm_route_table" "management" {
   # Optional resource attributes
   disable_bgp_route_propagation = each.value.template.disable_bgp_route_propagation
   tags                          = each.value.template.tags
-  
+
   # Dynamic configuration blocks
   dynamic "route" {
     for_each = each.value.template.route
@@ -184,60 +184,6 @@ resource "azurerm_subnet_network_security_group_association" "management" {
   ]
 }
 
-resource "azurerm_network_interface" "management" {
-  provider = azurerm.management
-
-  count                         = local.azurerm_network_interface_management.managed_by_module ? local.azurerm_network_interface_management.template.count : 0
-  name                          = "${local.azurerm_network_interface_management.template.name}${format("%02d", count.index + 1)}-nic01"
-  resource_group_name           = local.azurerm_network_interface_management.template.resource_group_name
-  location                      = local.azurerm_network_interface_management.template.location
-  enable_accelerated_networking = local.azurerm_network_interface_management.template.enable_accelerated_networking
-
-  ip_configuration {
-    name                          = "${local.azurerm_network_interface_management.template.ip_configuration.name}-ipconfig"
-    subnet_id                     = local.azurerm_network_interface_management.template.ip_configuration.subnet_id
-    private_ip_address_allocation = local.azurerm_network_interface_management.template.ip_configuration.private_ip_address_allocation
-  }
-
-  depends_on = [
-    azurerm_resource_group.management
-  ]
-}
-
-resource "azurerm_windows_virtual_machine" "management" {
-  provider = azurerm.management
-
-  count                      = local.azurerm_windows_virtual_machine_management.managed_by_module ? local.azurerm_windows_virtual_machine_management.template.count : 0
-  name                       = "${local.azurerm_windows_virtual_machine_management.template.name}${format("%02d", count.index + 1)}"
-  resource_group_name        = local.azurerm_windows_virtual_machine_management.template.resource_group_name
-  location                   = local.azurerm_windows_virtual_machine_management.template.location
-  size                       = local.azurerm_windows_virtual_machine_management.template.size
-  network_interface_ids      = ["${local.azurerm_windows_virtual_machine_management.template.network_interface_ids}${format("%02d", count.index + 1)}-nic01"]
-  provision_vm_agent         = local.azurerm_windows_virtual_machine_management.template.provision_vm_agent
-  admin_username             = local.azurerm_windows_virtual_machine_management.template.admin_username
-  admin_password             = data.azurerm_key_vault_secret.management[local.azurerm_windows_virtual_machine_management.template.admin_password].value
-  encryption_at_host_enabled = local.azurerm_windows_virtual_machine_management.template.encryption_at_host_enabled //'Microsoft.Compute/EncryptionAtHost' feature is must be enabled in the subscription for this setting to work https://learn.microsoft.com/en-us/azure/virtual-machines/disks-enable-host-based-encryption-portal?tabs=azure-powershell
-
-  os_disk {
-    name                 = "${local.azurerm_windows_virtual_machine_management.template.os_disk.name}${format("%02d", count.index + 1)}-osdisk"
-    caching              = local.azurerm_windows_virtual_machine_management.template.os_disk.caching
-    storage_account_type = local.azurerm_windows_virtual_machine_management.template.os_disk.storage_account_type
-  }
-
-  source_image_reference {
-    publisher = local.azurerm_windows_virtual_machine_management.template.source_image_reference.publisher
-    offer     = local.azurerm_windows_virtual_machine_management.template.source_image_reference.offer
-    sku       = local.azurerm_windows_virtual_machine_management.template.source_image_reference.sku
-    version   = local.azurerm_windows_virtual_machine_management.template.source_image_reference.version
-  }
-  //source_image_id = data.azurerm_shared_image.avd.id
-  //source_image_id = "/subscriptions/${var.avdshared_subscription_id}/resourceGroups/${var.image_rg}/providers/Microsoft.Compute/galleries/${var.gallery_name}/images/${var.image_name}/versions/latest"
-  depends_on = [
-    azurerm_resource_group.management,
-    azurerm_network_interface.management
-  ]
-}
-
 resource "azurerm_storage_account" "management" {
   for_each = local.azurerm_storage_account_management
 
@@ -252,7 +198,7 @@ resource "azurerm_storage_account" "management" {
   account_tier                       = each.value.template.account_tier
   account_replication_type           = each.value.template.account_replication_type
   tags                               = each.value.template.tags
-  
+
   # Set explicit dependency on Resource Group deployment
   depends_on = [
     azurerm_resource_group.management,
@@ -442,7 +388,7 @@ resource "azurerm_monitor_action_group" "management" {
   for_each = local.azurerm_monitor_action_group_management
 
   provider = azurerm.management
-  
+
   # Mandatory resource attributes
   name                = each.value.template.name
   short_name          = each.value.template.action_group_shortname

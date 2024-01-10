@@ -48,7 +48,7 @@ locals {
   }
 }
 
-# The following locals are used to build the map of subnet / Network Security Group associations 
+# The following locals are used to build the map of subnet / Network Security Group associations
 # to deploy.
 locals {
   azurerm_subnet_network_security_group_association_management = {
@@ -68,36 +68,7 @@ locals {
   }
 }
 
-# The following locals are used to build the map of the Key
-# Vault Secret for the VM Password to deploy.
-locals {
-  azurerm_key_vault_secret_management = {
-    for resource in module.management_resources.configuration.azurerm_key_vault_secret :
-    resource.resource_name => resource
-    if resource.managed_by_module
-  }
-}
-
-data "azurerm_key_vault_secret" "management" {
-  for_each = local.azurerm_key_vault_secret_management
-
-  name         = each.value.template.name
-  key_vault_id = each.value.template.key_vault_id == "" ? try(module.identity_resources.configuration.azurerm_key_vault[0].resource_id,"") : each.value.template.key_vault_id
-}
-
-# The following locals are used to build the map of AVD
-# Session Host Network Interfaces to deploy.
-locals {
-  azurerm_network_interface_management = module.management_resources.configuration.azurerm_network_interface
-}
-
-# The following locals are used to build the map of AVD
-# Session Hosts to deploy.
-locals {
-  azurerm_windows_virtual_machine_management = module.management_resources.configuration.azurerm_windows_virtual_machine
-}
-
-# The following locals are used to build the map of Storage 
+# The following locals are used to build the map of Storage
 # Accounts to deploy.
 locals {
   azurerm_storage_account_management = {

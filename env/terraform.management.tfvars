@@ -30,24 +30,6 @@ configure_management_resources = {
         enable_sentinel                                   = false
       }
     }
-    devopsagent = {
-      enabled                    = true
-      quantity                   = 1
-      vm_name_prefix             = "devops"
-      vnet_identifier            = "vnet_australiaeast"
-      subnet_identifier          = "Management"
-      location                   = "australiaeast"
-      size                       = "Standard_D2s_v3"
-      provision_vm_agent         = true
-      admin_username             = "localAdminUser"
-      key_vault_id               = ""
-      key_vault_secret           = "vmlocalpassword"
-      encryption_at_host_enabled = false
-      publisher                  = "MicrosoftWindowsServer"
-      offer                      = "WindowsServer"
-      sku                        = "2022-datacenter-azure-edition"
-      version                    = "latest"
-    }
     spoke_networks = [
       {
         identifier = "vnet_australiaeast"
@@ -115,17 +97,6 @@ configure_management_resources = {
   }
   advanced = {
     resource_prefix = "plat-mgmt"
-    custom_azure_backup_geo_codes = {
-      australiaeast      = "syd"
-      australiasoutheast = "mel"
-    }
-  }
-}
-# This is required to calculate the key vault name for DevOps agents
-# Uncomment as necessary
-configure_identity_resources = {
-  advanced = {
-    resource_prefix = "plat-idam"
     custom_azure_backup_geo_codes = {
       australiaeast      = "syd"
       australiasoutheast = "mel"

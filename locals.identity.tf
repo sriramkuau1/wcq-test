@@ -48,7 +48,7 @@ locals {
   }
 }
 
-# The following locals are used to build the map of subnet / Network Security Group associations 
+# The following locals are used to build the map of subnet / Network Security Group associations
 # to deploy.
 locals {
   azurerm_subnet_network_security_group_association_identity = {
@@ -84,16 +84,6 @@ locals {
   azurerm_key_vault_identity = {
     for resource in module.identity_resources.configuration.azurerm_key_vault :
     resource.resource_id => resource
-    if resource.managed_by_module
-  }
-}
-
-# The following locals are used to build the map of Azure Key
-# Vault Secrets to deploy.
-locals {
-  azurerm_key_vault_secret_identity = {
-    for resource in module.identity_resources.configuration.azurerm_key_vault_secret :
-    resource.resource_name => resource
     if resource.managed_by_module
   }
 }

@@ -94,7 +94,7 @@ resource "azurerm_network_security_group" "identity" {
 
   # Optional resource attributes
   tags = each.value.template.tags
-  
+
   # Dynamic configuration blocks
   dynamic "security_rule" {
     for_each = each.value.template.security_rule
@@ -231,26 +231,4 @@ resource "azurerm_key_vault" "identity" {
     azurerm_resource_group.identity,
   ]
 
-}
-
-
-# Generate VM local password
-resource "random_password" "identity" {
-  length  = 16
-  special = true
-}
-# Create Key Vault Secret
-resource "azurerm_key_vault_secret" "identity" {
-  for_each = local.azurerm_key_vault_secret_identity
-
-  provider = azurerm.identity
-
-  name         = each.value.template.name
-  value        = random_password.identity.result
-  key_vault_id = each.value.template.key_vault_id
-  content_type = each.value.template.content_type
-
-  depends_on = [
-    azurerm_key_vault.identity
-  ]
 }
