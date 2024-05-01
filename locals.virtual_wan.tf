@@ -71,6 +71,16 @@ locals {
   }
 }
 
+# The following locals are used to build the map of Azure
+# Virtual Hub Routing Intent to deploy.
+locals {
+  azurerm_virtual_hub_routing_intent = {
+    for resource in module.connectivity_resources.configuration.azurerm_virtual_hub_routing_intent :
+    resource.resource_id => resource
+    if resource.managed_by_module
+  }
+}
+
 # The following locals are used to build the map of Virtual
 # Network Peerings to deploy.
 locals {

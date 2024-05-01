@@ -579,6 +579,16 @@ variable "configure_connectivity_resources" {
                 }), {})
               }), {})
             }), {})
+            virtual_hub_routing_intent = optional(object({
+              enabled = optional(bool, false)
+              routing_policies = optional(list(
+              object({
+                name                          = optional(string, "")
+                destinations                  = optional(list(string), [])
+                next_hop                      = optional(string, "")
+                })
+              ), [])
+            }), {})
             spoke_virtual_network_resource_ids        = optional(list(string), [])
             secure_spoke_virtual_network_resource_ids = optional(list(string), [])
             enable_virtual_hub_connections            = optional(bool, false)

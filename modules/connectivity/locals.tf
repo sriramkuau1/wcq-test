@@ -268,6 +268,12 @@ locals {
     local.deploy_virtual_hub[location] &&
     virtual_hub.config.azure_firewall.enabled
   }
+  deploy_virtual_hub_routing_intent = {
+    for location, virtual_hub in local.virtual_hubs_by_location :
+    location =>
+    local.deploy_virtual_hub[location] &&
+    virtual_hub.config.virtual_hub_routing_intent.enabled
+  }
   deploy_virtual_hub_connection = {
     for location, virtual_hub in local.virtual_hubs_by_location :
     location =>
@@ -582,7 +588,7 @@ locals {
   }
   bastion_host_pip_availability_zones = {
     for location, hub_config in local.hub_networks_by_location :
-    location => 
+    location =>
     try(local.custom_settings.azurerm_public_ip["connectivity_bastion"][location].zones,
     concat(hub_config.config.bastion.config.availability_zones.zone_1 == true ? ["1"] : null,
       hub_config.config.bastion.config.availability_zones.zone_2 == true ? ["2"] : null,
@@ -1508,6 +1514,63 @@ locals {
 }
 
 # Configuration settings for resource type:
+#  - azurerm_virtual_hub_routing_intent
+locals {
+  virtual_hub_routing_intent_name = {
+    for location in local.virtual_hub_locations :
+    location =>
+    try(local.custom_settings.azurerm_virtual_hub_routing_intent["virtual_wan"][location].name,
+    "${local.resource_type_names.virtual_hub_routing_intent}-${lookup(local.custom_azure_backup_geo_codes, location, location)}-${local.resource_prefix}-${local.resource_type_names.vwan_hub}-01${local.resource_suffix}")
+  }
+  virtual_hub_routing_intent_resource_id_prefix = {
+    for location in local.virtual_hub_locations :
+    location =>
+    "${local.virtual_hub_resource_group_id[location]}/providers/virtualHubs/routingIntent"
+  }
+  virtual_hub_routing_intent_resource_id = {
+    for location in local.virtual_hub_locations :
+    location =>
+    "${local.virtual_hub_routing_intent_resource_id_prefix[location]}/${local.virtual_hub_routing_intent_name[location]}"
+  }
+
+  azurerm_virtual_hub_routing_intent = [
+    for location, virtual_hub in local.virtual_hubs_by_location :
+    {
+      # Resource logic attributes
+      resource_id       = local.virtual_hub_routing_intent_resource_id[location]
+      managed_by_module = local.deploy_virtual_hub_routing_intent[location]
+      # Resource definition attributes
+      name                = local.virtual_hub_routing_intent_name[location]
+      resource_group_name = local.virtual_hub_resource_group_name[location]
+      location            = location
+      virtual_hub_id      = local.virtual_hub_resource_id[location]
+
+      routing_policy = [
+        for routing_policy in virtual_hub.config.virtual_hub_routing_intent.routing_policies :
+        {
+          name         = routing_policy.name
+          destinations = routing_policy.destinations
+          next_hop     = routing_policy.next_hop
+
+          # Configure Azure Firewall as next hop
+          # next_hop     = local.virtual_hub_azfw_resource_id[location]
+
+          # Configure Network Virtual Appliance as next hop
+          # next_hop     = ""
+          # Reference to next_hop atrribute varies depends on individual implementation by different vendors and the specific construction of Terraform code,
+          # However, resourceID for Network Virtual Appliance resembles:
+          # "/subscriptions/00000000-0000-0000-0000-000000000000/resourcegroups/<resource_group_name>>/providers/Microsoft.Network/networkVirtualAppliances/<network_virtual_appliance_name>"
+          # Please construct a variable or scripting mechanism to ensure that the reference is made correctly in accordance with the specific solution
+        }
+      ]
+
+      # Optional definition attributes
+      tags = try(local.custom_settings.azurerm_virtual_hub_routing_intent["virtual_wan"][location].tags, local.tags)
+    }
+  ]
+}
+
+# Configuration settings for resource type:
 #  - azurerm_public_ip
 locals {
   azurerm_public_ip = flatten([
@@ -2276,6 +2339,21 @@ locals {
     ]
     azurerm_vpn_gateway = [
       for resource in local.azurerm_vpn_gateway :
+      {
+        resource_id   = resource.resource_id
+        resource_name = resource.name
+        template = {
+          for key, value in resource :
+          key => value
+          if resource.managed_by_module &&
+          key != "resource_id" &&
+          key != "managed_by_module"
+        }
+        managed_by_module = resource.managed_by_module
+      }
+    ]
+    azurerm_virtual_hub_routing_intent = [
+      for resource in local.azurerm_virtual_hub_routing_intent :
       {
         resource_id   = resource.resource_id
         resource_name = resource.name

@@ -419,6 +419,16 @@ object({
                 }), {})
               }), {})
             }), {})
+            virtual_hub_routing_intent = optional(object({
+              enabled = optional(bool, false)
+              routing_policies = optional(list(
+              object({
+                name                          = optional(string, "")
+                destinations                  = optional(list(string), [])
+                next_hop                      = optional(string, "")
+                })
+              ), [])
+            }), {})
             spoke_virtual_network_resource_ids      = optional(list(string), [])
             enable_outbound_virtual_network_peering = optional(bool, false)
             enable_hub_network_mesh_peering         = optional(bool, false)
@@ -1050,6 +1060,7 @@ The following resources are used by this module:
 - [azurerm_virtual_network_peering.connectivity](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_peering) (resource)
 - [azurerm_virtual_wan.virtual_wan](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_wan) (resource)
 - [azurerm_vpn_gateway.virtual_wan](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/vpn_gateway) (resource)
+- [azurerm_virtual_hub_routing_intent.virtual_wan](https://registry.terraform.io/providers/hashicorp/Azurerm/latest/docs/resources/virtual_hub_routing_intent) (resource)
 - [random_id.telem](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/id) (resource)
 - [time_sleep.after_azurerm_management_group](https://registry.terraform.io/providers/hashicorp/time/latest/docs/resources/sleep) (resource)
 - [time_sleep.after_azurerm_policy_assignment](https://registry.terraform.io/providers/hashicorp/time/latest/docs/resources/sleep) (resource)
@@ -1151,6 +1162,10 @@ Description: Returns the configuration data for all Subnets created by this modu
 ### <a name="output_azurerm_virtual_hub"></a> [azurerm\_virtual\_hub](#output\_azurerm\_virtual\_hub)
 
 Description: Returns the configuration data for all Virtual Hubs created by this module.
+
+### <a name="output_azurerm_virtual_hub_routing_intent"></a> [azurerm\_virtual\_hub\_routing\_intent](#output\_azurerm\_virtual\_hub\_routing\_intent)
+
+Description: Returns the configuration data for all Virtual Hub Routing Intents created by this module.
 
 ### <a name="output_azurerm_virtual_hub_connection"></a> [azurerm\_virtual\_hub\_connection](#output\_azurerm\_virtual\_hub\_connection)
 

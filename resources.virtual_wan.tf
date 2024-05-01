@@ -312,6 +312,33 @@ resource "azurerm_firewall" "virtual_wan" {
 
 }
 
+resource "azurerm_virtual_hub_routing_intent" "virtual_wan" {
+  for_each = local.azurerm_virtual_hub_routing_intent
+
+  provider = azurerm.connectivity
+
+  # Mandatory resource attributes
+  name                      = each.value.template.name
+  virtual_hub_id            = each.value.template.virtual_hub_id
+
+  dynamic "routing_policy" {
+    for_each = each.value.template.routing_policy
+    content {
+      name         = lookup(routing_policy.value, "name", null)
+      destinations = lookup(routing_policy.value, "destinations", null)
+      next_hop     = lookup(routing_policy.value, "next_hop", null)
+    }
+  }
+  depends_on = [
+    azurerm_resource_group.connectivity,
+    azurerm_resource_group.virtual_wan,
+    azurerm_virtual_wan.virtual_wan,
+    azurerm_virtual_hub.virtual_wan,
+    azurerm_firewall_policy.virtual_wan,
+    azurerm_firewall.virtual_wan
+  ]
+}
+
 resource "azurerm_virtual_hub_connection" "virtual_wan" {
   for_each = local.azurerm_virtual_hub_connection
 
