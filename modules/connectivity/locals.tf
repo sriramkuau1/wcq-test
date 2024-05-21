@@ -1288,6 +1288,54 @@ locals {
       ]
     )
   }
+  firewall_policy_rule_collection_group_connectivity = {
+    for location, hub_network in local.hub_networks_by_location:
+
+      location => concat (
+        [
+          for collection_group in hub_network.config.azure_firewall.config.firewall_policy_rule_collection_groups : merge(
+            collection_group,
+            {
+              # Resource logic attributes
+              resource_id = "${local.virtual_network_resource_group_id[location]}/providers/firewallPolicies/ruleCollectionGroups/${collection_group.name}"
+              managed_by_module = local.deploy_azure_firewall_policy[location]
+              scope             = "connectivity"
+              # Resource definition attributes
+              name               = collection_group.name
+              firewall_policy_id = local.azfw_policy_resource_id[location]
+              priority = collection_group.priority
+              application_rule_collection = collection_group.application_rule_collection
+              network_rule_collection = collection_group.network_rule_collection
+              nat_rule_collection = collection_group.nat_rule_collection
+            }
+          )
+        ]
+      )
+  }
+  firewall_policy_rule_collection_group_virtual_wan = {
+     for location, vwan_hub in local.virtual_hubs_by_location :
+
+      location => concat (
+        [
+          for collection_group in vwan_hub.config.azure_firewall.config.firewall_policy_rule_collection_groups : merge(
+            collection_group,
+            {
+              # Resource logic attributes
+              resource_id = "${local.virtual_hub_resource_group_id[location]}/providers/firewallPolicies/ruleCollectionGroups/${collection_group.name}"
+              managed_by_module = local.deploy_virtual_hub_azure_firewall_policy[location]
+              scope             = "virtual_wan"
+              # Resource definition attributes
+              name               = collection_group.name
+              firewall_policy_id = local.virtual_hub_azfw_policy_resource_id[location]
+              priority = collection_group.priority
+              application_rule_collection = collection_group.application_rule_collection
+              network_rule_collection = collection_group.network_rule_collection
+              nat_rule_collection = collection_group.nat_rule_collection
+            }
+          )
+        ]
+      )
+  }
   azurerm_firewall = concat(
     [
       for location, hub_network in local.hub_networks_by_location :
@@ -1496,6 +1544,20 @@ locals {
 #  - azurerm_firewall_policy
 locals {
   azurerm_firewall_policy = local.azurerm_firewall.*.azurerm_firewall_policy
+}
+
+# Configuration settings for resource type:
+#  - azurerm_firewall_policy_rule_collection_group
+locals{
+  azurerm_firewall_policy_rule_collection_group_connectivity = flatten([
+    for location, collection_rule_group in local.firewall_policy_rule_collection_group_connectivity :
+    collection_rule_group
+  ])
+  azurerm_firewall_policy_rule_collection_group_virtual_wan = flatten([
+    for location, collection_rule_group in local.firewall_policy_rule_collection_group_virtual_wan :
+    collection_rule_group
+  ])
+  azurerm_firewall_policy_rule_collection_group = concat(local.azurerm_firewall_policy_rule_collection_group_connectivity, local.azurerm_firewall_policy_rule_collection_group_virtual_wan)
 }
 
 # Configuration settings for resource type:
@@ -2543,6 +2605,23 @@ locals {
     ]
     azurerm_firewall_policy = [
       for resource in local.azurerm_firewall_policy :
+      {
+        resource_id   = resource.resource_id
+        resource_name = resource.name
+        template = {
+          for key, value in resource :
+          key => value
+          if resource.managed_by_module &&
+          key != "resource_id" &&
+          key != "managed_by_module" &&
+          key != "scope"
+        }
+        scope             = resource.scope
+        managed_by_module = resource.managed_by_module
+      }
+    ]
+    azurerm_firewall_policy_rule_collection_group = [
+      for resource in local.azurerm_firewall_policy_rule_collection_group :
       {
         resource_id   = resource.resource_id
         resource_name = resource.name

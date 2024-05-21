@@ -417,6 +417,79 @@ object({
                   zone_2 = optional(bool, true)
                   zone_3 = optional(bool, true)
                 }), {})
+                firewall_policy_rule_collection_groups = optional(list(object({
+                  name = string
+                  priority = number
+                  application_rule_collection = optional(list(object({
+                    name = string
+                    priority = number
+                    action = string
+                    rule = optional(list(object({
+                      name = string
+                      description = optional(string, null)
+                      protocols = optional(list(object({
+                        type = string
+                        port = string
+                      })), [])
+                      http_headers = optional(list(object({
+                        name = string
+                        value = string
+                      })), [])
+                      source_addresses = optional(list(string), [])
+                      source_ip_groups = optional(list(string), [])
+                      destination_addresses = optional(list(string), [])
+                      destination_urls = optional(list(string), [])
+                      destination_fqdns = optional(list(string), [])
+		                  destination_fqdn_tags = optional(list(string), [])
+                      terminate_tls = optional(bool, null)
+                      web_categories = optional(list(string), [])
+                    })),[])
+                  })),[])
+                  network_rule_collection = optional(list(object({
+                      name = string
+                      priority = number
+                      action = string
+                      rule = optional(list(object({
+                        name = optional(string)
+                        description = optional(string, null)
+                        protocols = list(string)
+                        destination_ports = list(string)
+                        source_addresses = optional(list(string), [])
+                        source_ip_groups = optional(list(string), [])
+                        destination_addresses = optional(list(string), [])
+                        destination_ip_groups = optional(list(string), [])
+                        destination_fqdns    = optional(list(string), [])
+                      })),[])
+                    })),[])
+                  nat_rule_collection = optional(list(object({
+                      name = string
+                      priority = number
+                      action = string
+                      rule = optional(list(object({
+                        name = string
+                        description = optional(string, null)
+                        protocols = list(string)
+                        source_addresses = optional(list(string), [])
+                        source_ip_groups = optional(list(string), [])
+                        destination_address = optional(string,"")
+                        destination_ports  = optional(list(string), [])
+                        translated_address = optional(string, "")
+                        translated_port    = optional(string, "")
+                    })),[])
+                  })),[])
+                })), [])
+              }), {})
+            }), {})
+            bastion = optional(object({
+              enabled = optional(bool, false)
+              config = optional(object({
+                address_prefix                = optional(string, "")
+                sku                           = optional(string, "Basic")
+                availability_zones = optional(object({
+                  zone_1 = optional(bool, true)
+                  zone_2 = optional(bool, true)
+                  zone_3 = optional(bool, true)
+                }), {})
               }), {})
             }), {})
             private_dns_resolver = optional(object({
@@ -437,17 +510,6 @@ object({
                 enabled = optional(bool, true)
                 metadata = optional(map(string), {})
                })), [])
-            }), {})
-            }), {})
-            virtual_hub_routing_intent = optional(object({
-              enabled = optional(bool, false)
-              routing_policies = optional(list(
-              object({
-                name                          = optional(string, "")
-                destinations                  = optional(list(string), [])
-                next_hop                      = optional(string, "")
-                })
-              ), [])
             }), {})
             spoke_virtual_network_resource_ids      = optional(list(string), [])
             enable_outbound_virtual_network_peering = optional(bool, false)
@@ -512,7 +574,78 @@ object({
                   zone_2 = optional(bool, true)
                   zone_3 = optional(bool, true)
                 }), {})
+                firewall_policy_rule_collection_groups = optional(list(object({
+                  name = string
+                  priority = number
+                  application_rule_collection = optional(list(object({
+                    name = string
+                    priority = number
+                    action = string
+                    rule = optional(list(object({
+                      name = string
+                      description = optional(string, null)
+                      protocols = optional(list(object({
+                        type = string
+                        port = string
+                      })), [])
+                      http_headers = optional(list(object({
+                        name = string
+                        value = string
+                      })), [])
+                      source_addresses = optional(list(string), [])
+                      source_ip_groups = optional(list(string), [])
+                      destination_addresses = optional(list(string), [])
+                      destination_urls = optional(list(string), [])
+                      destination_fqdns = optional(list(string), [])
+		                  destination_fqdn_tags = optional(list(string), [])
+                      terminate_tls = optional(bool, null)
+                      web_categories = optional(list(string), [])
+                    })),[])
+                  })),[])
+                  network_rule_collection = optional(list(object({
+                      name = string
+                      priority = number
+                      action = string
+                      rule = optional(list(object({
+                        name = string
+                        description = optional(string, null)
+                        protocols = list(string)
+                        destination_ports = list(string)
+                        source_addresses = optional(list(string), [])
+                        source_ip_groups = optional(list(string), [])
+                        destination_addresses = optional(list(string), [])
+                        destination_ip_groups = optional(list(string), [])
+                        destination_fqdns    = optional(list(string), [])
+                      })),[])
+                    })),[])
+                  nat_rule_collection = optional(list(object({
+                      name = string
+                      priority = number
+                      action = string
+                      rule = optional(list(object({
+                        name = string
+                        description = optional(string, null)
+                        protocols = list(string)
+                        source_addresses = optional(list(string), [])
+                        source_ip_groups = optional(list(string), [])
+                        destination_address = optional(string, "")
+                        destination_ports  = optional(list(string), [])
+                        translated_address = optional(string, "")
+                        translated_port    = optional(string, "")
+                      })),[])
+                    })),[])
+                })), [])
               }), {})
+            }), {})
+            virtual_hub_routing_intent = optional(object({
+                enabled = optional(bool, false)
+                routing_policies = optional(list(
+                object({
+                  name                          = optional(string, "")
+                  destinations                  = optional(list(string), [])
+                  next_hop                      = optional(string, "")
+                  })
+                ), [])
             }), {})
             spoke_virtual_network_resource_ids        = optional(list(string), [])
             secure_spoke_virtual_network_resource_ids = optional(list(string), [])
@@ -1045,6 +1178,8 @@ The following resources are used by this module:
 - [azurerm_firewall.virtual_wan](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/firewall) (resource)
 - [azurerm_firewall_policy.connectivity](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/firewall_policy) (resource)
 - [azurerm_firewall_policy.virtual_wan](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/firewall_policy) (resource)
+- [azurerm_firewall_policy_rule_collection_group.connectivity](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/firewall_policy_rule_collection_group) (resource)
+- [azurerm_firewall_policy_rule_collection_group.virtual_wan](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/firewall_policy_rule_collection_group) (resource)
 - [azurerm_log_analytics_linked_service.management](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/log_analytics_linked_service) (resource)
 - [azurerm_log_analytics_solution.management](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/log_analytics_solution) (resource)
 - [azurerm_log_analytics_workspace.management](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/log_analytics_workspace) (resource)
@@ -1117,6 +1252,10 @@ Description: Returns the configuration data for all (Virtual WAN) ExpressRoute G
 Description: Returns the configuration data for all Azure Firewalls created by this module.
 
 ### <a name="output_azurerm_firewall_policy"></a> [azurerm\_firewall\_policy](#output\_azurerm\_firewall\_policy)
+
+Description: Returns the configuration data for all Azure Firewall Policies created by this module.
+
+### <a name="output_azurerm_firewall_policy_rule_collection_group "></a> [azurerm\_firewall\_policy\_rule\_collection\_group](#output\_azurerm\_firewall\_policy)
 
 Description: Returns the configuration data for all Azure Firewall Policies created by this module.
 

@@ -248,6 +248,106 @@ resource "azurerm_firewall_policy" "virtual_wan" {
 
 }
 
+resource "azurerm_firewall_policy_rule_collection_group" "virtual_wan" {
+  for_each = local.azurerm_firewall_policy_rule_collection_group_virtual_wan
+
+  provider = azurerm.connectivity
+
+  # Mandatory resource attributes
+  name               = each.value.template.name
+  firewall_policy_id = each.value.template.firewall_policy_id
+  priority           = each.value.template.priority
+  dynamic "application_rule_collection" {
+    for_each = each.value.template.application_rule_collection
+    content {
+      name     = application_rule_collection.value["name"]
+      priority = application_rule_collection.value["priority"]
+      action   = application_rule_collection.value["action"]
+      dynamic "rule" {
+        for_each = application_rule_collection.value["rule"]
+        content {
+          name = rule.value["name"]
+          description = rule.value["description"]
+          dynamic "protocols" {
+            for_each = rule.value["protocols"]
+            content {
+              type  = protocols.value["type"]
+              port = protocols.value["port"]
+            }
+          }
+          dynamic "http_headers" {
+            for_each = rule.value["http_headers"]
+            content {
+              name = http_headers.value["name"]
+              value = http_headers.value["value"]
+            }
+          }
+          source_addresses  = rule.value["source_addresses"]
+          source_ip_groups  = rule.value["source_ip_groups"]
+          destination_addresses = rule.value["destination_addresses"]
+          destination_urls = rule.value["destination_urls"]
+          destination_fqdns = rule.value["destination_fqdns"]
+          destination_fqdn_tags = rule.value["destination_fqdn_tags"]
+          terminate_tls = rule.value["terminate_tls"]
+          web_categories = rule.value["web_categories"]
+        }
+      }
+    }
+  }
+
+  dynamic "network_rule_collection" {
+    for_each = each.value.template.network_rule_collection
+    content {
+      name     = network_rule_collection.value["name"]
+      priority = network_rule_collection.value["priority"]
+      action   = network_rule_collection.value["action"]
+      dynamic "rule" {
+        for_each = network_rule_collection.value["rule"]
+        content {
+          name                  = rule.value["name"]
+          description           = rule.value["description"]
+          protocols             = rule.value["protocols"]
+          destination_ports     = rule.value["destination_ports"]
+          source_addresses      = rule.value["source_addresses"]
+          source_ip_groups      = rule.value["source_ip_groups"]
+          destination_addresses = rule.value["destination_addresses"]
+          destination_ip_groups = rule.value["destination_ip_groups"]
+          destination_fqdns     = rule.value["destination_fqdns"]
+        }
+      }
+    }
+  }
+
+  dynamic "nat_rule_collection" {
+    for_each = each.value.template.nat_rule_collection
+    content {
+      name     = nat_rule_collection.value["name"]
+      priority = nat_rule_collection.value["priority"]
+      action   = nat_rule_collection.value["action"]
+      dynamic "rule" {
+        for_each = nat_rule_collection.value["rule"]
+        content {
+          name                  = rule.value["name"]
+          description           = rule.value["description"]
+          protocols             = rule.value["protocols"]
+          source_addresses      = rule.value["source_addresses"]
+          source_ip_groups      = rule.value["source_ip_groups"]
+          destination_address   = rule.value["destination_address"]
+          destination_ports     = rule.value["destination_ports"]
+          translated_address    = rule.value["translated_address"]
+          translated_port       = rule.value["translated_port"]
+        }
+      }
+    }
+  }
+
+  depends_on = [
+    azurerm_resource_group.connectivity,
+    azurerm_resource_group.virtual_wan,
+    azurerm_firewall.virtual_wan
+  ]
+}
+
 resource "azurerm_firewall" "virtual_wan" {
   for_each = local.azurerm_firewall_virtual_wan
 
