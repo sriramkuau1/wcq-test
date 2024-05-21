@@ -516,6 +516,130 @@ resource "azurerm_private_dns_zone" "connectivity" {
 
 }
 
+resource "azurerm_private_dns_resolver" "connectivity" {
+  for_each = local.azurerm_private_dns_resolver_connectivity
+
+  provider = azurerm.connectivity
+
+  # Mandatory resource attributes
+  name                = each.value.template.name
+  resource_group_name = each.value.template.resource_group_name
+  location            = each.value.template.location
+  virtual_network_id  = each.value.template.virtual_network_id
+
+  # Optional resource attributes
+  tags = each.value.template.tags
+
+  # Set explicit dependencies
+  depends_on = [
+    azurerm_resource_group.connectivity,
+    azurerm_virtual_network.connectivity
+  ]
+
+}
+
+resource "azurerm_private_dns_resolver_inbound_endpoint" "connectivity" {
+  for_each = local.azurerm_private_dns_resolver_inbound_endpoint_connectivity
+
+  provider = azurerm.connectivity
+
+  # Mandatory resource attributes
+  name                    = each.value.template.name
+  location                = each.value.template.location
+  private_dns_resolver_id = each.value.template.private_dns_resolver_id
+  dynamic "ip_configurations" {
+    for_each = each.value.template.ip_configurations
+    content {
+      private_ip_allocation_method = ip_configurations.value["private_ip_allocation_method"]
+      subnet_id                    = ip_configurations.value["subnet_id"]
+    }
+  }
+  # ip_configurations   = each.value.template.ip_configurations
+
+  # Optional resource attributes
+  tags = each.value.template.tags
+
+  # Set explicit dependencies
+  depends_on = [
+    azurerm_subnet.connectivity,
+    azurerm_private_dns_resolver.connectivity,
+  ]
+
+}
+
+resource "azurerm_private_dns_resolver_outbound_endpoint" "connectivity" {
+  for_each = local.azurerm_private_dns_resolver_outbound_endpoint_connectivity
+
+  provider = azurerm.connectivity
+
+  # Mandatory resource attributes
+  name                    = each.value.template.name
+  location                = each.value.template.location
+  private_dns_resolver_id = each.value.template.private_dns_resolver_id
+  subnet_id               = each.value.template.subnet_id
+
+  # Optional resource attributes
+  tags = each.value.template.tags
+
+  # Set explicit dependencies
+  depends_on = [
+    azurerm_private_dns_resolver_inbound_endpoint.connectivity
+  ]
+
+}
+
+resource "azurerm_private_dns_resolver_dns_forwarding_ruleset" "connectivity" {
+  for_each = local.azurerm_private_dns_resolver_dns_forwarding_ruleset_connectivity
+
+  provider = azurerm.connectivity
+
+  # Mandatory resource attributes
+  name                = each.value.template.name
+  resource_group_name = each.value.template.resource_group_name
+  location            = each.value.template.location
+  private_dns_resolver_outbound_endpoint_ids = each.value.template.private_dns_resolver_outbound_endpoint_ids
+
+  # Optional resource attributes
+  tags = each.value.template.tags
+
+  # Set explicit dependencies
+  depends_on = [
+    azurerm_private_dns_resolver_outbound_endpoint.connectivity
+  ]
+
+}
+
+resource "azurerm_private_dns_resolver_forwarding_rule" "connectivity" {
+  for_each = local.azurerm_private_dns_resolver_forwarding_rule_connectivity
+
+  provider = azurerm.connectivity
+
+  # Mandatory resource attributes
+  name                      = each.value.template.name
+  dns_forwarding_ruleset_id = each.value.template.dns_forwarding_ruleset_id
+  domain_name               = each.value.template.domain_name
+  enabled                   = each.value.template.enabled
+  dynamic target_dns_servers {
+    for_each = each.value.template.target_dns_servers
+    content {
+      ip_address = target_dns_servers.value["ip_address"]
+      port       = target_dns_servers.value["port"]
+    }
+  }
+  # target_dns_servers = each.value.template.target_dns_servers
+  # metadata {
+  #   for_each = each.value.template.metadata
+
+  #   key = metadata.value["key"]
+  # }
+  metadata = each.value.template.metadata
+
+  # Set explicit dependencies
+  depends_on = [
+    azurerm_private_dns_resolver_dns_forwarding_ruleset.connectivity
+  ]
+}
+
 resource "azurerm_dns_zone" "connectivity" {
   for_each = local.azurerm_dns_zone_connectivity
 

@@ -42,7 +42,7 @@ The following input variables are optional (have default values):
 
 ### <a name="input_custom_azure_backup_geo_codes"></a> [custom\_azure\_backup\_geo\_codes](#input\_custom\_azure\_backup\_geo\_codes)
 
-Description: If specified, the custom\_azure\_backup\_geo\_codes variable will override or append Geo Codes (value) used to generate region-specific DNS zone names for Azure Backup private endpoints.  
+Description: If specified, the custom\_azure\_backup\_geo\_codes variable will override or append Geo Codes (value) used to generate region-specific DNS zone names for Azure Backup private endpoints.
 For more information, please refer to: https://learn.microsoft.com/azure/backup/private-endpoints#when-using-custom-dns-server-or-host-files
 
 Type: `map(string)`
@@ -212,6 +212,26 @@ object({
               }), {})
             }), {})
           }), {})
+          private_dns_resolver = optional(object({
+              enabled = optional(bool, false)
+              config  = optional(object({
+               address_prefix_in = optional(string, "")
+               address_prefix_out = optional(string, "")
+               deploy_private_dns_resolver_inbound_endpoint       = optional(bool, false)
+               deploy_private_dns_resolver_outbound_endpoint      = optional(bool, false)
+               deploy_private_dns_resolver_dns_forwarding_ruleset = optional(bool, false)
+               private_dns_resolver_forwarding_rule               = optional(list(object({
+                name = string
+                domain_name = string
+                target_dns_servers = list(object({
+                  ip_address = string
+                  port = string
+                }))
+                enabled = optional(bool, true)
+                metadata = optional(map(string), {})
+               })), [])
+            }), {})
+            }), {})
           spoke_virtual_network_resource_ids      = optional(list(string), [])
           enable_outbound_virtual_network_peering = optional(bool, false)
           enable_hub_network_mesh_peering         = optional(bool, false)

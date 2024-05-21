@@ -29,7 +29,7 @@ locals {
   }
 }
 
-# The following locals are used to build the map of subnet / Network Security Group associations 
+# The following locals are used to build the map of subnet / Network Security Group associations
 # to deploy.
 locals {
   azurerm_subnet_network_security_group_association_connectivity = {
@@ -54,6 +54,56 @@ locals {
 locals {
   azurerm_bastion_host_connectivity = {
     for resource in module.connectivity_resources.configuration.azurerm_bastion_host :
+    resource.resource_id => resource
+    if resource.managed_by_module
+  }
+}
+
+# The following locals are used to build the map of Private
+# DNS Resolvers to deploy.
+locals {
+  azurerm_private_dns_resolver_connectivity = {
+    for resource in module.connectivity_resources.configuration.azurerm_private_dns_resolver :
+    resource.resource_id => resource
+    if resource.managed_by_module
+  }
+}
+
+# The following locals are used to build the map of Private
+# DNS Resolvers Inbound Endpoints to deploy.
+locals {
+  azurerm_private_dns_resolver_inbound_endpoint_connectivity = {
+    for resource in module.connectivity_resources.configuration.azurerm_private_dns_resolver_inbound_endpoint :
+    resource.resource_id => resource
+    if resource.managed_by_module
+  }
+}
+
+# The following locals are used to build the map of Private
+# DNS Resolvers Outbound Endpoints to deploy.
+locals {
+  azurerm_private_dns_resolver_outbound_endpoint_connectivity = {
+    for resource in module.connectivity_resources.configuration.azurerm_private_dns_resolver_outbound_endpoint :
+    resource.resource_id => resource
+    if resource.managed_by_module
+  }
+}
+
+# The following locals are used to build the map of Private
+# DNS Resolvers Forwarding Rulesets to deploy.
+locals {
+  azurerm_private_dns_resolver_dns_forwarding_ruleset_connectivity = {
+    for resource in module.connectivity_resources.configuration.azurerm_private_dns_resolver_dns_forwarding_ruleset :
+    resource.resource_id => resource
+    if resource.managed_by_module
+  }
+}
+
+# The following locals are used to build the map of Private
+# DNS Resolvers Forwarding Rules to deploy.
+locals {
+  azurerm_private_dns_resolver_forwarding_rule_connectivity = {
+    for resource in module.connectivity_resources.configuration.azurerm_private_dns_resolver_forwarding_rule :
     resource.resource_id => resource
     if resource.managed_by_module
   }

@@ -419,6 +419,26 @@ object({
                 }), {})
               }), {})
             }), {})
+            private_dns_resolver = optional(object({
+              enabled = optional(bool, false)
+              config  = optional(object({
+               address_prefix_in = optional(string, "")
+               address_prefix_out = optional(string, "")
+               deploy_private_dns_resolver_inbound_endpoint       = optional(bool, false)
+               deploy_private_dns_resolver_outbound_endpoint      = optional(bool, false)
+               deploy_private_dns_resolver_dns_forwarding_ruleset = optional(bool, false)
+               private_dns_resolver_forwarding_rule               = optional(list(object({
+                name = string
+                domain_name = string
+                target_dns_servers = list(object({
+                  ip_address = string
+                  port = string
+                }))
+                enabled = optional(bool, true)
+                metadata = optional(map(string), {})
+               })), [])
+            }), {})
+            }), {})
             virtual_hub_routing_intent = optional(object({
               enabled = optional(bool, false)
               routing_policies = optional(list(
@@ -1039,6 +1059,11 @@ The following resources are used by this module:
 - [azurerm_network_ddos_protection_plan.connectivity](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_ddos_protection_plan) (resource)
 - [azurerm_policy_definition.enterprise_scale](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/policy_definition) (resource)
 - [azurerm_policy_set_definition.enterprise_scale](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/policy_set_definition) (resource)
+- [azurerm_private_dns_resolver.connectivity](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_dns_resolver) (resource)
+- [azurerm_private_dns_resolver_dns_forwarding_ruleset.connectivity](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_dns_resolver_dns_forwarding_ruleset) (resource)
+- [azurerm_private_dns_resolver_dns_forwarding_rule.connectivity](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_dns_resolver_forwarding_rule) (resource)
+- [azurerm_private_dns_resolver_inbound_endpoint.connectivity](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_dns_resolver_inbound_endpoint) (resource)
+- [azurerm_private_dns_resolver_outbound_endpoint.connectivity](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_dns_resolver_outbound_endpoint) (resource)
 - [azurerm_private_dns_zone.connectivity](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_dns_zone) (resource)
 - [azurerm_private_dns_zone_virtual_network_link.connectivity](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_dns_zone_virtual_network_link) (resource)
 - [azurerm_public_ip.connectivity](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/public_ip) (resource)
@@ -1130,6 +1155,26 @@ Description: Returns the configuration data for all Policy Definitions created b
 ### <a name="output_azurerm_policy_set_definition"></a> [azurerm\_policy\_set\_definition](#output\_azurerm\_policy\_set\_definition)
 
 Description: Returns the configuration data for all Policy Set Definitions created by this module.
+
+### <a name="output_azurerm_private_dns_resolver"></a> [azurerm\_private\_dns\_resolver](#output\_azurerm\_private\_dns\_resolver)
+
+Description: Returns the configuration data for all Private DNS Resolvers created by this module.
+
+### <a name="output_azurerm_private_dns_resolver_forwarding_ruleset"></a> [azurerm\_private\_dns\_resolver\_forwarding\_ruleset](#output\_azurerm\_private\_dns\_resolver\_forwarding\_ruleset)
+
+Description: Returns the configuration data for all Private DNS Resolvers Forwarding Rulesets created by this module.
+
+### <a name="output_azurerm_private_dns_resolver_forwarding_rule"></a> [azurerm\_private\_dns\_resolver\_forwarding\_rule](#output\_azurerm\_private\_dns\_resolver\_forwarding\_rule)
+
+Description: Returns the configuration data for all Private DNS Resolvers Forwarding Rules created by this module.
+
+### <a name="output_azurerm_private_dns_resolver_inbound_endpoint"></a> [azurerm\_private\_dns\_resolver\_inbound\_endpoint](#output\_azurerm\_private\_dns\_resolver\_inbound\_endpoint)
+
+Description: Returns the configuration data for all Private DNS Resolvers Inbound Endpoints created by this module.
+
+### <a name="output_azurerm_private_dns_resolver_outbound_endpoint"></a> [azurerm\_private\_dns\_resolver\_outbound\_endpoint](#output\_azurerm\_private\_dns\_resolver\_outound\_endpoint)
+
+Description: Returns the configuration data for all Private DNS Resolvers Outbound Endpoints created by this module.
 
 ### <a name="output_azurerm_private_dns_zone"></a> [azurerm\_private\_dns\_zone](#output\_azurerm\_private\_dns\_zone)
 

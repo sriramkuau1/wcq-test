@@ -179,6 +179,34 @@ locals {
     hub_network.config.bastion.enabled &&
     hub_network.config.bastion.config.address_prefix != local.empty_string
   }
+  deploy_private_dns_resolver = {
+    for location, hub_network in local.hub_networks_by_location :
+    location =>
+    local.deploy_hub_network[location] &&
+    hub_network.config.private_dns_resolver.enabled
+  }
+  deploy_private_dns_resolver_inbound_endpoint = {
+    for location, hub_network in local.hub_networks_by_location :
+    location =>
+    local.deploy_hub_network[location] &&
+    local.deploy_private_dns_resolver[location] &&
+    hub_network.config.private_dns_resolver.config.deploy_private_dns_resolver_inbound_endpoint
+  }
+  deploy_private_dns_resolver_outbound_endpoint = {
+    for location, hub_network in local.hub_networks_by_location :
+    location =>
+    local.deploy_hub_network[location] &&
+    local.deploy_private_dns_resolver[location] &&
+    hub_network.config.private_dns_resolver.config.deploy_private_dns_resolver_outbound_endpoint
+  }
+  deploy_private_dns_resolver_dns_forwarding_ruleset = {
+    for location, hub_network in local.hub_networks_by_location :
+    location =>
+    local.deploy_hub_network[location] &&
+    local.deploy_private_dns_resolver[location] &&
+    local.deploy_private_dns_resolver_outbound_endpoint[location] &&
+    hub_network.config.private_dns_resolver.config.deploy_private_dns_resolver_dns_forwarding_ruleset
+  }
   deploy_virtual_network_gateway = {
     for location, hub_network in local.hub_networks_by_location :
     location =>
@@ -639,6 +667,169 @@ locals {
       )
     }
   ]
+}
+
+# Configuration settings for resource type:
+#  - azurerm_private_dns_resolver
+locals {
+  private_dns_resolver_name = {
+    for location in local.hub_network_locations :
+    location =>
+    try(local.custom_settings.private_dns_resolver["connectivity"][location].name,
+    "${local.resource_type_names.private_dns_resolver}-${lookup(local.custom_azure_backup_geo_codes, location, location)}-${local.resource_prefix}-01${local.resource_suffix}")
+  }
+  private_dns_resolver_prefix = {
+    for location in local.hub_network_locations :
+    location =>
+    "${local.virtual_network_resource_group_id[location]}/providers/Microsoft.Network/dnsResolvers"
+  }
+  private_dns_resolver_resource_id = {
+    for location in local.hub_network_locations :
+    location =>
+    "${local.private_dns_resolver_prefix[location]}/${local.private_dns_resolver_name[location]}"
+  }
+  private_dns_resolver_inbound_endpoint_name = {
+    for location in local.hub_network_locations :
+    location =>
+    try(local.custom_settings.private_dns_resolver_inbound_endpoint["connectivity"][location].name,
+    "${local.resource_type_names.private_dns_resolver_inbound_endpoint}-${lookup(local.custom_azure_backup_geo_codes, location, location)}-${local.resource_prefix}-01${local.resource_suffix}")
+  }
+  private_dns_resolver_inbound_endpoint_prefix = {
+    for location in local.hub_network_locations :
+    location =>
+    "${local.virtual_network_resource_group_id[location]}/providers/Microsoft.Network/dnsResolvers/${local.private_dns_resolver_name[location]}/inboundEndpoints"
+  }
+  private_dns_resolver_inbound_endpoint_resource_id = {
+    for location in local.hub_network_locations :
+    location =>
+    "${local.private_dns_resolver_inbound_endpoint_prefix[location]}/${local.private_dns_resolver_inbound_endpoint_name[location]}"
+  }
+  private_dns_resolver_outbound_endpoint_name = {
+    for location in local.hub_network_locations :
+    location =>
+    try(local.custom_settings.private_dns_resolver_outbound_endpoint["connectivity"][location].name,
+    "${local.resource_type_names.private_dns_resolver_outbound_endpoint}-${lookup(local.custom_azure_backup_geo_codes, location, location)}-${local.resource_prefix}-01${local.resource_suffix}")
+  }
+  private_dns_resolver_outbound_endpoint_prefix = {
+    for location in local.hub_network_locations :
+    location =>
+    "${local.virtual_network_resource_group_id[location]}/providers/Microsoft.Network/dnsResolvers/${local.private_dns_resolver_name[location]}/outboundEndpoints"
+  }
+  private_dns_resolver_outbound_endpoint_resource_id = {
+    for location in local.hub_network_locations :
+    location =>
+    "${local.private_dns_resolver_outbound_endpoint_prefix[location]}/${local.private_dns_resolver_outbound_endpoint_name[location]}"
+  }
+  private_dns_resolver_dns_forwarding_ruleset_name = {
+    for location in local.hub_network_locations :
+    location =>
+    try(local.custom_settings.private_dns_resolver_dns_forwarding_ruleset["connectivity"][location].name,
+    "${local.resource_type_names.private_dns_resolver_dns_forwarding_ruleset}-${lookup(local.custom_azure_backup_geo_codes, location, location)}-${local.resource_prefix}-01${local.resource_suffix}")
+  }
+   private_dns_resolver_dns_forwarding_ruleset_prefix = {
+    for location in local.hub_network_locations :
+    location =>
+    "${local.virtual_network_resource_group_id[location]}/providers/Microsoft.Network/dnsForwardingRulesets"
+  }
+  private_dns_resolver_dns_forwarding_ruleset_resource_id = {
+    for location in local.hub_network_locations :
+    location =>
+    "${local.private_dns_resolver_dns_forwarding_ruleset_prefix[location]}/${local.private_dns_resolver_dns_forwarding_ruleset_name[location]}"
+  }
+  azurerm_private_dns_resolver = [
+    for location, hub_config in local.hub_networks_by_location :
+    {
+      # Resource logic attributes
+      resource_id           = local.private_dns_resolver_resource_id[location]
+      managed_by_module     = local.deploy_private_dns_resolver[location]
+      # Resource definition attributes
+      name                  = local.private_dns_resolver_name[location]
+      resource_group_name   = local.resource_group_names_by_scope_and_location["connectivity"][location]
+      location              = location
+      virtual_network_id    = try(local.custom_settings.private_dns_resolver["connectivity"][location].virtual_network_id, local.virtual_network_resource_id[location])
+      tags                  = try(local.custom_settings.private_dns_resolver["connectivity"][location].tags, local.tags)
+    }
+  ]
+  azurerm_private_dns_resolver_inbound_endpoint = [
+    for location, hub_config in local.hub_networks_by_location :
+    {
+      # Resource logic attributes
+      resource_id             = local.private_dns_resolver_inbound_endpoint_resource_id[location]
+      managed_by_module       = local.deploy_private_dns_resolver_inbound_endpoint[location]
+      # Resource definition attributes
+      name                    = local.private_dns_resolver_inbound_endpoint_name[location]
+      resource_group_name     = local.resource_group_names_by_scope_and_location["connectivity"][location]
+      location                = location
+      private_dns_resolver_id = local.private_dns_resolver_resource_id[location]
+      ip_configurations  = [{
+        private_ip_allocation_method = "Dynamic"
+        subnet_id                    = try(local.custom_settings.private_dns_resolver["connectivity"][location].inbound_subnet_id, "${local.virtual_network_resource_id[location]}/subnets/PrivateResolverIn")
+      }]
+      tags                    = try(local.custom_settings.private_dns_resolver["connectivity"][location].tags, local.tags)
+    }
+  ]
+  azurerm_private_dns_resolver_outbound_endpoint = [
+    for location, hub_config in local.hub_networks_by_location :
+    {
+      # Resource logic attributes
+      resource_id             = local.private_dns_resolver_outbound_endpoint_resource_id[location]
+      managed_by_module       = local.deploy_private_dns_resolver_outbound_endpoint[location]
+      # Resource definition attributes
+      name                    = local.private_dns_resolver_outbound_endpoint_name[location]
+      resource_group_name     = local.resource_group_names_by_scope_and_location["connectivity"][location]
+      location                = location
+      private_dns_resolver_id = local.private_dns_resolver_resource_id[location]
+      subnet_id               = try(local.custom_settings.private_dns_resolver["connectivity"][location].outbound_subnet_id, "${local.virtual_network_resource_id[location]}/subnets/PrivateResolverOut")
+      tags                    = try(local.custom_settings.private_dns_resolver["connectivity"][location].tags, local.tags)
+    }
+  ]
+  azurerm_private_dns_resolver_dns_forwarding_ruleset = [
+    for location, hub_config in local.hub_networks_by_location :
+    {
+     # Resource logic attributes
+      resource_id                                = local.private_dns_resolver_dns_forwarding_ruleset_resource_id[location]
+      managed_by_module                          = local.deploy_private_dns_resolver_dns_forwarding_ruleset[location]
+      # Resource definition attributes
+      name                                       = local.private_dns_resolver_dns_forwarding_ruleset_name[location]
+      resource_group_name                        = local.resource_group_names_by_scope_and_location["connectivity"][location]
+      location                                   = location
+      private_dns_resolver_outbound_endpoint_ids = [local.private_dns_resolver_outbound_endpoint_resource_id[location]]
+      tags                                       = try(local.custom_settings.private_dns_resolver_dns_forwarding_ruleset["connectivity"][location].tags, local.tags)
+    }
+  ]
+  private_dns_resolver_forwarding_rule = {
+    for location, hub_network in local.hub_networks_by_location:
+
+              location => concat (
+                [
+                  for forwarding_rule in hub_network.config.private_dns_resolver.config.private_dns_resolver_forwarding_rule : merge(
+                    forwarding_rule,
+                    {
+                      # Resource logic attributes
+                      resource_id = "${local.virtual_network_resource_group_id[location]}/providers/dnsForwardingRulesets/forwardingRules/${forwarding_rule.name}"
+                      managed_by_module = local.deploy_private_dns_resolver_dns_forwarding_ruleset[location]
+                      scope             = "connectivity"
+                      # Resource definition attributes
+                      name                      = forwarding_rule.name
+                      dns_forwarding_ruleset_id = local.private_dns_resolver_dns_forwarding_ruleset_resource_id[location]
+                      domain_name               = forwarding_rule.domain_name
+                      enabled                   = forwarding_rule.enabled
+                      target_dns_servers        = forwarding_rule.target_dns_servers
+                      metadata                  = forwarding_rule.metadata
+                    }
+                  )
+                ]
+              )
+  }
+}
+
+# Configuration settings for resource type:
+#  - azurerm_private_dns_resolver_forwarding_rule
+locals {
+azurerm_private_dns_resolver_forwarding_rule = flatten([
+    for forwarding_rule in local.private_dns_resolver_forwarding_rule:
+    forwarding_rule
+  ])
 }
 
 # Configuration settings for resource type:
@@ -2212,6 +2403,81 @@ locals {
     ]
     azurerm_bastion_host = [
       for resource in local.azurerm_bastion_host :
+      {
+        resource_id   = resource.resource_id
+        resource_name = resource.name
+        template = {
+          for key, value in resource :
+          key => value
+          if resource.managed_by_module &&
+          key != "resource_id" &&
+          key != "managed_by_module"
+        }
+        managed_by_module = resource.managed_by_module
+      }
+    ]
+    azurerm_private_dns_resolver = [
+      for resource in local.azurerm_private_dns_resolver :
+      {
+        resource_id   = resource.resource_id
+        resource_name = resource.name
+        template = {
+          for key, value in resource :
+          key => value
+          if resource.managed_by_module &&
+          key != "resource_id" &&
+          key != "managed_by_module"
+        }
+        managed_by_module = resource.managed_by_module
+      }
+    ]
+    azurerm_private_dns_resolver_inbound_endpoint = [
+      for resource in local.azurerm_private_dns_resolver_inbound_endpoint :
+      {
+        resource_id   = resource.resource_id
+        resource_name = resource.name
+        template = {
+          for key, value in resource :
+          key => value
+          if resource.managed_by_module &&
+          key != "resource_id" &&
+          key != "managed_by_module"
+        }
+        managed_by_module = resource.managed_by_module
+      }
+    ]
+    azurerm_private_dns_resolver_outbound_endpoint = [
+      for resource in local.azurerm_private_dns_resolver_outbound_endpoint :
+      {
+        resource_id   = resource.resource_id
+        resource_name = resource.name
+        template = {
+          for key, value in resource :
+          key => value
+          if resource.managed_by_module &&
+          key != "resource_id" &&
+          key != "managed_by_module"
+        }
+        managed_by_module = resource.managed_by_module
+      }
+    ]
+    azurerm_private_dns_resolver_dns_forwarding_ruleset = [
+      for resource in local.azurerm_private_dns_resolver_dns_forwarding_ruleset :
+      {
+        resource_id   = resource.resource_id
+        resource_name = resource.name
+        template = {
+          for key, value in resource :
+          key => value
+          if resource.managed_by_module &&
+          key != "resource_id" &&
+          key != "managed_by_module"
+        }
+        managed_by_module = resource.managed_by_module
+      }
+    ]
+    azurerm_private_dns_resolver_forwarding_rule = [
+      for resource in local.azurerm_private_dns_resolver_forwarding_rule :
       {
         resource_id   = resource.resource_id
         resource_name = resource.name
