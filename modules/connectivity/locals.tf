@@ -543,6 +543,62 @@ locals {
           service_endpoint_policy_ids                   = try(local.custom_settings.azurerm_subnet["connectivity"][location]["AzureBastionSubnet"].service_endpoint_policy_ids, null)
           delegation                                    = try(local.custom_settings.azurerm_subnet["connectivity"][location]["AzureBastionSubnet"].delegation, local.empty_list)
         }
+      ] : local.empty_list,
+      # Conditionally add DNS Private Resolver In subnet
+      local.deploy_private_dns_resolver[location] ? [
+        {
+          # Resource logic attributes
+          resource_id               = "${local.virtual_network_resource_id[location]}/subnets/PrivateResolverIn"
+          location                  = location
+          network_security_group_id = null
+          route_table_id            = null
+          # Resource definition attributes
+          name                                          = "PrivateResolverIn"
+          address_prefixes                              = [hub_network.config.private_dns_resolver.config.address_prefix_in, ]
+          resource_group_name                           = local.resource_group_names_by_scope_and_location["connectivity"][location]
+          virtual_network_name                          = local.virtual_network_name[location]
+          private_endpoint_network_policies_enabled     = try(local.custom_settings.azurerm_subnet["connectivity"][location]["PrivateResolverIn"].private_endpoint_network_policies_enabled, null)
+          private_link_service_network_policies_enabled = try(local.custom_settings.azurerm_subnet["connectivity"][location]["PrivateResolverIn"].private_link_service_network_policies_enabled, null)
+          service_endpoints                             = try(local.custom_settings.azurerm_subnet["connectivity"][location]["PrivateResolverIn"].service_endpoints, null)
+          service_endpoint_policy_ids                   = try(local.custom_settings.azurerm_subnet["connectivity"][location]["PrivateResolverIn"].service_endpoint_policy_ids, null)
+          delegation                                    = try(local.custom_settings.azurerm_subnet["connectivity"][location]["PrivateResolverIn"].delegation,
+                                                          [{
+                                                              name = "delegation"
+                                                              service_delegation = [{
+                                                                name = "Microsoft.Network/dnsResolvers"
+                                                                actions = []
+                                                              }]
+                                                            }
+                                                          ])
+        }
+      ] : local.empty_list,
+      # Conditionally add DNS Private Resolver Out subnet
+      local.deploy_private_dns_resolver[location] ? [
+        {
+          # Resource logic attributes
+          resource_id               = "${local.virtual_network_resource_id[location]}/subnets/PrivateResolverOut"
+          location                  = location
+          network_security_group_id = null
+          route_table_id            = null
+          # Resource definition attributes
+          name                                          = "PrivateResolverOut"
+          address_prefixes                              = [hub_network.config.private_dns_resolver.config.address_prefix_out, ]
+          resource_group_name                           = local.resource_group_names_by_scope_and_location["connectivity"][location]
+          virtual_network_name                          = local.virtual_network_name[location]
+          private_endpoint_network_policies_enabled     = try(local.custom_settings.azurerm_subnet["connectivity"][location]["PrivateResolverOut"].private_endpoint_network_policies_enabled, null)
+          private_link_service_network_policies_enabled = try(local.custom_settings.azurerm_subnet["connectivity"][location]["PrivateResolverOut"].private_link_service_network_policies_enabled, null)
+          service_endpoints                             = try(local.custom_settings.azurerm_subnet["connectivity"][location]["PrivateResolverOut"].service_endpoints, null)
+          service_endpoint_policy_ids                   = try(local.custom_settings.azurerm_subnet["connectivity"][location]["PrivateResolverOut"].service_endpoint_policy_ids, null)
+          delegation                                    = try(local.custom_settings.azurerm_subnet["connectivity"][location]["PrivateResolverOut"].delegation,
+                                                          [{
+                                                              name = "delegation"
+                                                              service_delegation = [{
+                                                                name = "Microsoft.Network/dnsResolvers"
+                                                                actions = []
+                                                              }]
+                                                            }
+                                                          ])
+        }
       ] : local.empty_list
     )
   }
