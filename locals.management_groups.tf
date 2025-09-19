@@ -105,20 +105,20 @@ locals {
 # can be overridden using the subscription_id_overrides variable.
 locals {
   es_subscription_ids_defaults = {
-    (local.root_id)                   = local.empty_list
-    "${local.root_id}-decommissioned" = local.empty_list
-    "${local.root_id}-sandboxes"      = local.empty_list
-    "${local.root_id}-landingzones"  = local.empty_list
-    "${local.root_id}-platform"       = local.empty_list
-    "${local.root_id}-platform-connectivity"   = local.empty_list
-    "${local.root_id}-platform-management"     = local.empty_list
-    "${local.root_id}-platform-identity"       = local.empty_list
-    "${local.root_id}-landingzones-corp"           = local.empty_list
-    "${local.root_id}-landingzones-online"         = local.empty_list
-    "${local.root_id}-landingzones-sap"            = local.empty_list
-    "${local.root_id}-demo-corp"      = local.empty_list
-    "${local.root_id}-demo-online"    = local.empty_list
-    "${local.root_id}-demo-sap"       = local.empty_list
+    (local.root_id)                          = local.empty_list
+    "${local.root_id}-decommissioned"        = local.empty_list
+    "${local.root_id}-sandboxes"             = local.empty_list
+    "${local.root_id}-landingzones"          = local.empty_list
+    "${local.root_id}-platform"              = local.empty_list
+    "${local.root_id}-platform-connectivity" = local.empty_list
+    "${local.root_id}-platform-management"   = local.empty_list
+    "${local.root_id}-platform-identity"     = local.empty_list
+    "${local.root_id}-landingzones-corp"     = local.empty_list
+    "${local.root_id}-landingzones-online"   = local.empty_list
+    "${local.root_id}-landingzones-sap"      = local.empty_list
+    "${local.root_id}-demo-corp"             = local.empty_list
+    "${local.root_id}-demo-online"           = local.empty_list
+    "${local.root_id}-demo-sap"              = local.empty_list
   }
   subscription_id_overrides_map = {
     for key, value in local.subscription_id_overrides :

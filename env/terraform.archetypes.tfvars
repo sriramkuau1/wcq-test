@@ -8,25 +8,30 @@ deploy_identity_resources     = false
 deploy_management_resources   = false
 deploy_landingzones_resources = false
 
-subscription_id_overrides = {
-  landingzones-corp = [
-    ""
-  ]
-}
+# subscription_id_overrides = {
+#   landingzones-corp = [
+#     ""
+#   ]
+# }
+# subscription_id_overrides = {
+#   landingzones-corp = [
+#     ""
+#   ]
+# }
 archetype_config_overrides = {
   root = {
-    access_control = {
-      Contributor = [
-        ""
-      ]
-    }
+    # access_control = {
+      # Contributor = [
+      #   ""
+      # ]
+    # }
   }
   landingzones = {
     parameters = {
       Deploy-VM-Backup = {
         effect            = "deployIfNotExists"
         exclusionTagName  = "SkipAutoShutdown"
-        exclusionTagValue = ["yes","no"]
+        exclusionTagValue = ["yes", "no"]
       }
       Append-UDR-Route = {
         nextHopIpAddress = "10.100.0.4"

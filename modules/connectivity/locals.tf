@@ -396,7 +396,7 @@ locals {
     for location in local.hub_network_locations :
     location =>
     try(local.custom_settings.azurerm_virtual_network["connectivity"][location].name,
-    "${local.resource_type_names.virtual_network}-${lookup(local.custom_azure_backup_geo_codes, location, location)}-${local.resource_prefix}-${replace(lookup(local.hub_networks_by_location, location, location).config.address_space[0],"/","_")}${local.resource_suffix}")
+    "${local.resource_type_names.virtual_network}-${lookup(local.custom_azure_backup_geo_codes, location, location)}-${local.resource_prefix}-${replace(lookup(local.hub_networks_by_location, location, location).config.address_space[0], "/", "_")}${local.resource_suffix}")
   }
   virtual_network_resource_group_id = {
     for location in local.hub_network_locations :
@@ -448,15 +448,15 @@ locals {
           subnet,
           {
             # Resource logic attributes
-            resource_id                 = "${local.virtual_network_resource_id[location]}/subnets/${subnet.name}"
-            location                    = location
-            network_security_group_id   = try(subnet.network_security_group_id, null)
-            route_table_id              = try(subnet.route_table_id, null)
+            resource_id               = "${local.virtual_network_resource_id[location]}/subnets/${subnet.name}"
+            location                  = location
+            network_security_group_id = try(subnet.network_security_group_id, null)
+            route_table_id            = try(subnet.route_table_id, null)
             # Resource definition attributes
             name                                          = subnet.name
             resource_group_name                           = local.resource_group_names_by_scope_and_location["connectivity"][location]
             virtual_network_name                          = local.virtual_network_name[location]
-            private_endpoint_network_policies_enabled     = try(local.custom_settings.azurerm_subnet["connectivity"][location][subnet.name].private_endpoint_network_policies_enabled, null)
+            private_endpoint_network_policies             = try(local.custom_settings.azurerm_subnet["connectivity"][location][subnet.name].private_endpoint_network_policies, null)
             private_link_service_network_policies_enabled = try(local.custom_settings.azurerm_subnet["connectivity"][location][subnet.name].private_link_service_network_policies_enabled, null)
             service_endpoints                             = try(local.custom_settings.azurerm_subnet["connectivity"][location][subnet.name].service_endpoints, null)
             service_endpoint_policy_ids                   = try(local.custom_settings.azurerm_subnet["connectivity"][location][subnet.name].service_endpoint_policy_ids, null)
@@ -477,7 +477,7 @@ locals {
           address_prefixes                              = [hub_network.config.virtual_network_gateway.config.address_prefix, ]
           resource_group_name                           = local.resource_group_names_by_scope_and_location["connectivity"][location]
           virtual_network_name                          = local.virtual_network_name[location]
-          private_endpoint_network_policies_enabled     = try(local.custom_settings.azurerm_subnet["connectivity"][location]["GatewaySubnet"].private_endpoint_network_policies_enabled, null)
+          private_endpoint_network_policies             = try(local.custom_settings.azurerm_subnet["connectivity"][location]["GatewaySubnet"].private_endpoint_network_policies, null)
           private_link_service_network_policies_enabled = try(local.custom_settings.azurerm_subnet["connectivity"][location]["GatewaySubnet"].private_link_service_network_policies_enabled, null)
           service_endpoints                             = try(local.custom_settings.azurerm_subnet["connectivity"][location]["GatewaySubnet"].service_endpoints, null)
           service_endpoint_policy_ids                   = try(local.custom_settings.azurerm_subnet["connectivity"][location]["GatewaySubnet"].service_endpoint_policy_ids, null)
@@ -497,7 +497,7 @@ locals {
           address_prefixes                              = [hub_network.config.azure_firewall.config.address_prefix, ]
           resource_group_name                           = local.resource_group_names_by_scope_and_location["connectivity"][location]
           virtual_network_name                          = local.virtual_network_name[location]
-          private_endpoint_network_policies_enabled     = try(local.custom_settings.azurerm_subnet["connectivity"][location]["AzureFirewallSubnet"].private_endpoint_network_policies_enabled, null)
+          private_endpoint_network_policies             = try(local.custom_settings.azurerm_subnet["connectivity"][location]["AzureFirewallSubnet"].private_endpoint_network_policies, null)
           private_link_service_network_policies_enabled = try(local.custom_settings.azurerm_subnet["connectivity"][location]["AzureFirewallSubnet"].private_link_service_network_policies_enabled, null)
           service_endpoints                             = try(local.custom_settings.azurerm_subnet["connectivity"][location]["AzureFirewallSubnet"].service_endpoints, null)
           service_endpoint_policy_ids                   = try(local.custom_settings.azurerm_subnet["connectivity"][location]["AzureFirewallSubnet"].service_endpoint_policy_ids, null)
@@ -517,7 +517,7 @@ locals {
           address_prefixes                              = [hub_network.config.azure_firewall.config.address_management_prefix, ]
           resource_group_name                           = local.resource_group_names_by_scope_and_location["connectivity"][location]
           virtual_network_name                          = local.virtual_network_name[location]
-          private_endpoint_network_policies_enabled     = try(local.custom_settings.azurerm_subnet["connectivity"][location]["AzureFirewallManagementSubnet"].private_endpoint_network_policies_enabled, null)
+          private_endpoint_network_policies             = try(local.custom_settings.azurerm_subnet["connectivity"][location]["AzureFirewallManagementSubnet"].private_endpoint_network_policies, null)
           private_link_service_network_policies_enabled = try(local.custom_settings.azurerm_subnet["connectivity"][location]["AzureFirewallManagementSubnet"].private_link_service_network_policies_enabled, null)
           service_endpoints                             = try(local.custom_settings.azurerm_subnet["connectivity"][location]["AzureFirewallManagementSubnet"].service_endpoints, null)
           service_endpoint_policy_ids                   = try(local.custom_settings.azurerm_subnet["connectivity"][location]["AzureFirewallManagementSubnet"].service_endpoint_policy_ids, null)
@@ -537,7 +537,7 @@ locals {
           address_prefixes                              = [hub_network.config.bastion.config.address_prefix, ]
           resource_group_name                           = local.resource_group_names_by_scope_and_location["connectivity"][location]
           virtual_network_name                          = local.virtual_network_name[location]
-          private_endpoint_network_policies_enabled     = try(local.custom_settings.azurerm_subnet["connectivity"][location]["AzureBastionSubnet"].private_endpoint_network_policies_enabled, null)
+          private_endpoint_network_policies             = try(local.custom_settings.azurerm_subnet["connectivity"][location]["AzureBastionSubnet"].private_endpoint_network_policies, null)
           private_link_service_network_policies_enabled = try(local.custom_settings.azurerm_subnet["connectivity"][location]["AzureBastionSubnet"].private_link_service_network_policies_enabled, null)
           service_endpoints                             = try(local.custom_settings.azurerm_subnet["connectivity"][location]["AzureBastionSubnet"].service_endpoints, null)
           service_endpoint_policy_ids                   = try(local.custom_settings.azurerm_subnet["connectivity"][location]["AzureBastionSubnet"].service_endpoint_policy_ids, null)
@@ -557,19 +557,19 @@ locals {
           address_prefixes                              = [hub_network.config.private_dns_resolver.config.address_prefix_in, ]
           resource_group_name                           = local.resource_group_names_by_scope_and_location["connectivity"][location]
           virtual_network_name                          = local.virtual_network_name[location]
-          private_endpoint_network_policies_enabled     = try(local.custom_settings.azurerm_subnet["connectivity"][location]["PrivateResolverIn"].private_endpoint_network_policies_enabled, null)
+          private_endpoint_network_policies             = try(local.custom_settings.azurerm_subnet["connectivity"][location]["PrivateResolverIn"].private_endpoint_network_policies, null)
           private_link_service_network_policies_enabled = try(local.custom_settings.azurerm_subnet["connectivity"][location]["PrivateResolverIn"].private_link_service_network_policies_enabled, null)
           service_endpoints                             = try(local.custom_settings.azurerm_subnet["connectivity"][location]["PrivateResolverIn"].service_endpoints, null)
           service_endpoint_policy_ids                   = try(local.custom_settings.azurerm_subnet["connectivity"][location]["PrivateResolverIn"].service_endpoint_policy_ids, null)
-          delegation                                    = try(local.custom_settings.azurerm_subnet["connectivity"][location]["PrivateResolverIn"].delegation,
-                                                          [{
-                                                              name = "delegation"
-                                                              service_delegation = [{
-                                                                name = "Microsoft.Network/dnsResolvers"
-                                                                actions = []
-                                                              }]
-                                                            }
-                                                          ])
+          delegation = try(local.custom_settings.azurerm_subnet["connectivity"][location]["PrivateResolverIn"].delegation,
+            [{
+              name = "delegation"
+              service_delegation = [{
+                name    = "Microsoft.Network/dnsResolvers"
+                actions = ["Microsoft.Network/virtualNetworks/subnets/join/action"]
+              }]
+              }
+          ])
         }
       ] : local.empty_list,
       # Conditionally add DNS Private Resolver Out subnet
@@ -585,19 +585,19 @@ locals {
           address_prefixes                              = [hub_network.config.private_dns_resolver.config.address_prefix_out, ]
           resource_group_name                           = local.resource_group_names_by_scope_and_location["connectivity"][location]
           virtual_network_name                          = local.virtual_network_name[location]
-          private_endpoint_network_policies_enabled     = try(local.custom_settings.azurerm_subnet["connectivity"][location]["PrivateResolverOut"].private_endpoint_network_policies_enabled, null)
+          private_endpoint_network_policies             = try(local.custom_settings.azurerm_subnet["connectivity"][location]["PrivateResolverOut"].private_endpoint_network_policies, null)
           private_link_service_network_policies_enabled = try(local.custom_settings.azurerm_subnet["connectivity"][location]["PrivateResolverOut"].private_link_service_network_policies_enabled, null)
           service_endpoints                             = try(local.custom_settings.azurerm_subnet["connectivity"][location]["PrivateResolverOut"].service_endpoints, null)
           service_endpoint_policy_ids                   = try(local.custom_settings.azurerm_subnet["connectivity"][location]["PrivateResolverOut"].service_endpoint_policy_ids, null)
-          delegation                                    = try(local.custom_settings.azurerm_subnet["connectivity"][location]["PrivateResolverOut"].delegation,
-                                                          [{
-                                                              name = "delegation"
-                                                              service_delegation = [{
-                                                                name = "Microsoft.Network/dnsResolvers"
-                                                                actions = []
-                                                              }]
-                                                            }
-                                                          ])
+          delegation = try(local.custom_settings.azurerm_subnet["connectivity"][location]["PrivateResolverOut"].delegation,
+            [{
+              name = "delegation"
+              service_delegation = [{
+                name    = "Microsoft.Network/dnsResolvers"
+                actions = ["Microsoft.Network/virtualNetworks/subnets/join/action"]
+              }]
+              }
+          ])
         }
       ] : local.empty_list
     )
@@ -615,9 +615,9 @@ locals {
     for subnet in local.azurerm_subnet :
     {
       # Resource logic attributes
-      network_security_group_id   = try(subnet.network_security_group_id, "") == null ? "" : try(subnet.network_security_group_id, "")
-      subnet_id                   = try(subnet.resource_id, "")
-      location                    = try(subnet.location,local.location)
+      network_security_group_id = try(subnet.network_security_group_id, "") == null ? "" : try(subnet.network_security_group_id, "")
+      subnet_id                 = try(subnet.resource_id, "")
+      location                  = try(subnet.location, local.location)
     }
   ]
 }
@@ -628,9 +628,9 @@ locals {
   azurerm_subnet_route_table_association = [
     for subnet in local.azurerm_subnet : {
       # Resource logic attributes
-      route_table_id  = try(subnet.route_table_id, "") == null ? "" : try(subnet.route_table_id, "")
-      subnet_id       = try(subnet.resource_id)
-      location        = try(subnet.location,local.location)
+      route_table_id = try(subnet.route_table_id, "") == null ? "" : try(subnet.route_table_id, "")
+      subnet_id      = try(subnet.resource_id)
+      location       = try(subnet.location, local.location)
     }
   ]
 }
@@ -674,26 +674,28 @@ locals {
     for location, hub_config in local.hub_networks_by_location :
     location =>
     try(local.custom_settings.azurerm_public_ip["connectivity_bastion"][location].zones,
-    concat(hub_config.config.bastion.config.availability_zones.zone_1 == true ? ["1"] : null,
-      hub_config.config.bastion.config.availability_zones.zone_2 == true ? ["2"] : null,
-      hub_config.config.bastion.config.availability_zones.zone_3 == true ? ["3"] : null,
+      concat(hub_config.config.bastion.config.availability_zones.zone_1 == true ? ["1"] : null,
+        hub_config.config.bastion.config.availability_zones.zone_2 == true ? ["2"] : null,
+        hub_config.config.bastion.config.availability_zones.zone_3 == true ? ["3"] : null,
     ))
   }
   azurerm_bastion_host = [
     for location, hub_config in local.hub_networks_by_location :
     {
       # Resource logic attributes
-      resource_id           = local.bastion_host_resource_id[location]
-      managed_by_module     = local.deploy_bastion_host[location]
+      resource_id       = local.bastion_host_resource_id[location]
+      managed_by_module = local.deploy_bastion_host[location]
       # Resource definition attributes
-      name                  = local.bastion_host_name[location]
-      resource_group_name   = local.resource_group_names_by_scope_and_location["connectivity"][location]
-      location              = location
-      sku                   = hub_config.config.bastion.config.sku
-      subnet_id             = try(local.custom_settings.bastion_host["connectivity"][location].ip_configuration.subnet_id, "${local.virtual_network_resource_id[location]}/subnets/AzureBastionSubnet")
-      public_ip_address_id  = try(local.custom_settings.bastion_host["connectivity"][location].ip_configuration.public_ip_address_id, "${local.bastion_host_pip_resource_id_prefix[location]}/${local.bastion_host_pip_name[location]}")
-      tags                  = try(local.custom_settings.bastion_host["connectivity"][location].tags, local.tags)
-      azurerm_public_ip     = (
+      name                 = local.bastion_host_name[location]
+      resource_group_name  = local.resource_group_names_by_scope_and_location["connectivity"][location]
+      location             = location
+      sku                  = hub_config.config.bastion.config.sku
+      subnet_id            = try(local.custom_settings.bastion_host["connectivity"][location].ip_configuration.subnet_id, "${local.virtual_network_resource_id[location]}/subnets/AzureBastionSubnet")
+      public_ip_address_id = try(local.custom_settings.bastion_host["connectivity"][location].ip_configuration.public_ip_address_id, "${local.bastion_host_pip_resource_id_prefix[location]}/${local.bastion_host_pip_name[location]}")
+      tags                 = try(local.custom_settings.bastion_host["connectivity"][location].tags, local.tags)
+      ip_connect_enabled   = try(local.custom_settings.bastion_host["connectivity"][location].ip_connect_enabled, hub_config.config.bastion.config.ip_connect_enabled)
+      tunneling_enabled    = try(local.custom_settings.bastion_host["connectivity"][location].tunneling_enabled, hub_config.config.bastion.config.tunneling_enabled)
+      azurerm_public_ip = (
         # The following logic ensures that no `azurerm_public_ip` is created by the module if a custom `ip_configuration` is provided
         length(try(local.custom_settings.bastion_host["connectivity"][location].ip_configuration, local.empty_map)) > 0
         ? local.empty_list
@@ -782,7 +784,7 @@ locals {
     try(local.custom_settings.private_dns_resolver_dns_forwarding_ruleset["connectivity"][location].name,
     "${local.resource_type_names.private_dns_resolver_dns_forwarding_ruleset}-${lookup(local.custom_azure_backup_geo_codes, location, location)}-${local.resource_prefix}-01${local.resource_suffix}")
   }
-   private_dns_resolver_dns_forwarding_ruleset_prefix = {
+  private_dns_resolver_dns_forwarding_ruleset_prefix = {
     for location in local.hub_network_locations :
     location =>
     "${local.virtual_network_resource_group_id[location]}/providers/Microsoft.Network/dnsForwardingRulesets"
@@ -796,40 +798,40 @@ locals {
     for location, hub_config in local.hub_networks_by_location :
     {
       # Resource logic attributes
-      resource_id           = local.private_dns_resolver_resource_id[location]
-      managed_by_module     = local.deploy_private_dns_resolver[location]
+      resource_id       = local.private_dns_resolver_resource_id[location]
+      managed_by_module = local.deploy_private_dns_resolver[location]
       # Resource definition attributes
-      name                  = local.private_dns_resolver_name[location]
-      resource_group_name   = local.resource_group_names_by_scope_and_location["connectivity"][location]
-      location              = location
-      virtual_network_id    = try(local.custom_settings.private_dns_resolver["connectivity"][location].virtual_network_id, local.virtual_network_resource_id[location])
-      tags                  = try(local.custom_settings.private_dns_resolver["connectivity"][location].tags, local.tags)
+      name                = local.private_dns_resolver_name[location]
+      resource_group_name = local.resource_group_names_by_scope_and_location["connectivity"][location]
+      location            = location
+      virtual_network_id  = try(local.custom_settings.private_dns_resolver["connectivity"][location].virtual_network_id, local.virtual_network_resource_id[location])
+      tags                = try(local.custom_settings.private_dns_resolver["connectivity"][location].tags, local.tags)
     }
   ]
   azurerm_private_dns_resolver_inbound_endpoint = [
     for location, hub_config in local.hub_networks_by_location :
     {
       # Resource logic attributes
-      resource_id             = local.private_dns_resolver_inbound_endpoint_resource_id[location]
-      managed_by_module       = local.deploy_private_dns_resolver_inbound_endpoint[location]
+      resource_id       = local.private_dns_resolver_inbound_endpoint_resource_id[location]
+      managed_by_module = local.deploy_private_dns_resolver_inbound_endpoint[location]
       # Resource definition attributes
       name                    = local.private_dns_resolver_inbound_endpoint_name[location]
       resource_group_name     = local.resource_group_names_by_scope_and_location["connectivity"][location]
       location                = location
       private_dns_resolver_id = local.private_dns_resolver_resource_id[location]
-      ip_configurations  = [{
+      ip_configurations = [{
         private_ip_allocation_method = "Dynamic"
         subnet_id                    = try(local.custom_settings.private_dns_resolver["connectivity"][location].inbound_subnet_id, "${local.virtual_network_resource_id[location]}/subnets/PrivateResolverIn")
       }]
-      tags                    = try(local.custom_settings.private_dns_resolver["connectivity"][location].tags, local.tags)
+      tags = try(local.custom_settings.private_dns_resolver["connectivity"][location].tags, local.tags)
     }
   ]
   azurerm_private_dns_resolver_outbound_endpoint = [
     for location, hub_config in local.hub_networks_by_location :
     {
       # Resource logic attributes
-      resource_id             = local.private_dns_resolver_outbound_endpoint_resource_id[location]
-      managed_by_module       = local.deploy_private_dns_resolver_outbound_endpoint[location]
+      resource_id       = local.private_dns_resolver_outbound_endpoint_resource_id[location]
+      managed_by_module = local.deploy_private_dns_resolver_outbound_endpoint[location]
       # Resource definition attributes
       name                    = local.private_dns_resolver_outbound_endpoint_name[location]
       resource_group_name     = local.resource_group_names_by_scope_and_location["connectivity"][location]
@@ -842,9 +844,9 @@ locals {
   azurerm_private_dns_resolver_dns_forwarding_ruleset = [
     for location, hub_config in local.hub_networks_by_location :
     {
-     # Resource logic attributes
-      resource_id                                = local.private_dns_resolver_dns_forwarding_ruleset_resource_id[location]
-      managed_by_module                          = local.deploy_private_dns_resolver_dns_forwarding_ruleset[location]
+      # Resource logic attributes
+      resource_id       = local.private_dns_resolver_dns_forwarding_ruleset_resource_id[location]
+      managed_by_module = local.deploy_private_dns_resolver_dns_forwarding_ruleset[location]
       # Resource definition attributes
       name                                       = local.private_dns_resolver_dns_forwarding_ruleset_name[location]
       resource_group_name                        = local.resource_group_names_by_scope_and_location["connectivity"][location]
@@ -854,36 +856,36 @@ locals {
     }
   ]
   private_dns_resolver_forwarding_rule = {
-    for location, hub_network in local.hub_networks_by_location:
+    for location, hub_network in local.hub_networks_by_location :
 
-              location => concat (
-                [
-                  for forwarding_rule in hub_network.config.private_dns_resolver.config.private_dns_resolver_forwarding_rule : merge(
-                    forwarding_rule,
-                    {
-                      # Resource logic attributes
-                      resource_id = "${local.virtual_network_resource_group_id[location]}/providers/dnsForwardingRulesets/forwardingRules/${forwarding_rule.name}"
-                      managed_by_module = local.deploy_private_dns_resolver_dns_forwarding_ruleset[location]
-                      scope             = "connectivity"
-                      # Resource definition attributes
-                      name                      = forwarding_rule.name
-                      dns_forwarding_ruleset_id = local.private_dns_resolver_dns_forwarding_ruleset_resource_id[location]
-                      domain_name               = forwarding_rule.domain_name
-                      enabled                   = forwarding_rule.enabled
-                      target_dns_servers        = forwarding_rule.target_dns_servers
-                      metadata                  = forwarding_rule.metadata
-                    }
-                  )
-                ]
-              )
+    location => concat(
+      [
+        for forwarding_rule in hub_network.config.private_dns_resolver.config.private_dns_resolver_forwarding_rule : merge(
+          forwarding_rule,
+          {
+            # Resource logic attributes
+            resource_id       = "${local.virtual_network_resource_group_id[location]}/providers/dnsForwardingRulesets/forwardingRules/${forwarding_rule.name}"
+            managed_by_module = local.deploy_private_dns_resolver_dns_forwarding_ruleset[location]
+            scope             = "connectivity"
+            # Resource definition attributes
+            name                      = forwarding_rule.name
+            dns_forwarding_ruleset_id = local.private_dns_resolver_dns_forwarding_ruleset_resource_id[location]
+            domain_name               = forwarding_rule.domain_name
+            enabled                   = forwarding_rule.enabled
+            target_dns_servers        = forwarding_rule.target_dns_servers
+            metadata                  = forwarding_rule.metadata
+          }
+        )
+      ]
+    )
   }
 }
 
 # Configuration settings for resource type:
 #  - azurerm_private_dns_resolver_forwarding_rule
 locals {
-azurerm_private_dns_resolver_forwarding_rule = flatten([
-    for forwarding_rule in local.private_dns_resolver_forwarding_rule:
+  azurerm_private_dns_resolver_forwarding_rule = flatten([
+    for forwarding_rule in local.private_dns_resolver_forwarding_rule :
     forwarding_rule
   ])
 }
@@ -1345,52 +1347,52 @@ locals {
     )
   }
   firewall_policy_rule_collection_group_connectivity = {
-    for location, hub_network in local.hub_networks_by_location:
+    for location, hub_network in local.hub_networks_by_location :
 
-      location => concat (
-        [
-          for collection_group in hub_network.config.azure_firewall.config.firewall_policy_rule_collection_groups : merge(
-            collection_group,
-            {
-              # Resource logic attributes
-              resource_id = "${local.virtual_network_resource_group_id[location]}/providers/firewallPolicies/ruleCollectionGroups/${collection_group.name}"
-              managed_by_module = local.deploy_azure_firewall_policy[location]
-              scope             = "connectivity"
-              # Resource definition attributes
-              name               = collection_group.name
-              firewall_policy_id = local.azfw_policy_resource_id[location]
-              priority = collection_group.priority
-              application_rule_collection = collection_group.application_rule_collection
-              network_rule_collection = collection_group.network_rule_collection
-              nat_rule_collection = collection_group.nat_rule_collection
-            }
-          )
-        ]
-      )
+    location => concat(
+      [
+        for collection_group in hub_network.config.azure_firewall.config.firewall_policy_rule_collection_groups : merge(
+          collection_group,
+          {
+            # Resource logic attributes
+            resource_id       = "${local.virtual_network_resource_group_id[location]}/providers/firewallPolicies/ruleCollectionGroups/${collection_group.name}"
+            managed_by_module = local.deploy_azure_firewall_policy[location]
+            scope             = "connectivity"
+            # Resource definition attributes
+            name                        = collection_group.name
+            firewall_policy_id          = local.azfw_policy_resource_id[location]
+            priority                    = collection_group.priority
+            application_rule_collection = collection_group.application_rule_collection
+            network_rule_collection     = collection_group.network_rule_collection
+            nat_rule_collection         = collection_group.nat_rule_collection
+          }
+        )
+      ]
+    )
   }
   firewall_policy_rule_collection_group_virtual_wan = {
-     for location, vwan_hub in local.virtual_hubs_by_location :
+    for location, vwan_hub in local.virtual_hubs_by_location :
 
-      location => concat (
-        [
-          for collection_group in vwan_hub.config.azure_firewall.config.firewall_policy_rule_collection_groups : merge(
-            collection_group,
-            {
-              # Resource logic attributes
-              resource_id = "${local.virtual_hub_resource_group_id[location]}/providers/firewallPolicies/ruleCollectionGroups/${collection_group.name}"
-              managed_by_module = local.deploy_virtual_hub_azure_firewall_policy[location]
-              scope             = "virtual_wan"
-              # Resource definition attributes
-              name               = collection_group.name
-              firewall_policy_id = local.virtual_hub_azfw_policy_resource_id[location]
-              priority = collection_group.priority
-              application_rule_collection = collection_group.application_rule_collection
-              network_rule_collection = collection_group.network_rule_collection
-              nat_rule_collection = collection_group.nat_rule_collection
-            }
-          )
-        ]
-      )
+    location => concat(
+      [
+        for collection_group in vwan_hub.config.azure_firewall.config.firewall_policy_rule_collection_groups : merge(
+          collection_group,
+          {
+            # Resource logic attributes
+            resource_id       = "${local.virtual_hub_resource_group_id[location]}/providers/firewallPolicies/ruleCollectionGroups/${collection_group.name}"
+            managed_by_module = local.deploy_virtual_hub_azure_firewall_policy[location]
+            scope             = "virtual_wan"
+            # Resource definition attributes
+            name                        = collection_group.name
+            firewall_policy_id          = local.virtual_hub_azfw_policy_resource_id[location]
+            priority                    = collection_group.priority
+            application_rule_collection = collection_group.application_rule_collection
+            network_rule_collection     = collection_group.network_rule_collection
+            nat_rule_collection         = collection_group.nat_rule_collection
+          }
+        )
+      ]
+    )
   }
   azurerm_firewall = concat(
     [
@@ -1604,7 +1606,7 @@ locals {
 
 # Configuration settings for resource type:
 #  - azurerm_firewall_policy_rule_collection_group
-locals{
+locals {
   azurerm_firewall_policy_rule_collection_group_connectivity = flatten([
     for location, collection_rule_group in local.firewall_policy_rule_collection_group_connectivity :
     collection_rule_group
@@ -2492,7 +2494,7 @@ locals {
     azurerm_subnet_network_security_group_association = [
       for resource in local.azurerm_subnet_network_security_group_association :
       {
-        resource_id   = resource.subnet_id
+        resource_id = resource.subnet_id
         template = {
           for key, value in resource :
           key => value
@@ -2507,7 +2509,7 @@ locals {
     azurerm_subnet_route_table_association = [
       for resource in local.azurerm_subnet_route_table_association :
       {
-        resource_id   = resource.subnet_id
+        resource_id = resource.subnet_id
         template = {
           for key, value in resource :
           key => value

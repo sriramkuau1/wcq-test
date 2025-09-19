@@ -27,40 +27,40 @@ terraform {
     resource_group_name  = ""
     storage_account_name = ""
     container_name       = ""
-    key                  = "terraform.tfstate"
+    key                  = ""
     subscription_id      = ""
   }
 }
 
 provider "azurerm" {
-  skip_provider_registration = "true"
+  resource_provider_registrations = "none"
   features {}
 }
 
 provider "azurerm" {
-  skip_provider_registration = "true"
-  subscription_id = local.subscription_id_connectivity
+  resource_provider_registrations = "none"
+  subscription_id                 = local.subscription_id_connectivity
   features {}
   alias = "connectivity"
 }
 
 provider "azurerm" {
-  skip_provider_registration = "true"
-  subscription_id = local.subscription_id_management
+  resource_provider_registrations = "none"
+  subscription_id                 = local.subscription_id_management
   features {}
   alias = "management"
 }
 
 provider "azurerm" {
-  skip_provider_registration = "true"
-  subscription_id = local.subscription_id_identity
+  resource_provider_registrations = "none"
+  subscription_id                 = local.subscription_id_identity
   features {}
   alias = "identity"
 }
 
 provider "azurerm" {
-  skip_provider_registration = "true"
-  subscription_id = local.subscription_id_landingzones
+  resource_provider_registrations = "none"
+  subscription_id                 = local.subscription_id_landingzones
   features {}
   alias = "landingzones"
 }

@@ -164,73 +164,75 @@ variable "settings" {
                 zone_3 = optional(bool, true)
               }), {})
               firewall_policy_rule_collection_groups = optional(list(object({
-                  name = string
+                name     = string
+                priority = number
+                application_rule_collection = optional(list(object({
+                  name     = string
                   priority = number
-                  application_rule_collection = optional(list(object({
-                    name = string
-                    priority = number
-                    action = string
-                    rule = optional(list(object({
-                      name = string
-                      description = optional(string, null)
-                      protocols = optional(list(object({
-                        type = string
-                        port = string
-                      })), [])
-                      http_headers = optional(list(object({
-                        name = string
-                        value = string
-                      })), [])
-                      source_addresses = optional(list(string), [])
-                      source_ip_groups = optional(list(string), [])
-                      destination_addresses = optional(list(string), [])
-                      destination_urls = optional(list(string), [])
-                      destination_fqdns = optional(list(string), [])
-		                  destination_fqdn_tags = optional(list(string), [])
-                      terminate_tls = optional(bool, null)
-                      web_categories = optional(list(string), [])
-                    })),[])
-                  })),[])
-                  network_rule_collection = optional(list(object({
-                      name = string
-                      priority = number
-                      action = string
-                      rule = optional(list(object({
-                        name = string
-                        description = optional(string, null)
-                        protocols = list(string)
-                        destination_ports = list(string)
-                        source_addresses = optional(list(string), [])
-                        source_ip_groups = optional(list(string), [])
-                        destination_addresses = optional(list(string), [])
-                        destination_ip_groups = optional(list(string), [])
-                        destination_fqdns    = optional(list(string), [])
-                      })),[])
-                    })),[])
-                  nat_rule_collection = optional(list(object({
-                      name = string
-                      priority = number
-                      action = string
-                      rule = optional(list(object({
-                        name = string
-                        description = optional(string, null)
-                        protocols = list(string)
-                        source_addresses = optional(list(string), [])
-                        source_ip_groups = optional(list(string), [])
-                        destination_address = optional(string, "")
-                        destination_ports  = optional(list(string), [])
-                        translated_address = optional(string, "")
-                        translated_port    = optional(string, "")
-                    })),[])
-                  })),[])
+                  action   = string
+                  rule = optional(list(object({
+                    name        = string
+                    description = optional(string, null)
+                    protocols = optional(list(object({
+                      type = string
+                      port = string
+                    })), [])
+                    http_headers = optional(list(object({
+                      name  = string
+                      value = string
+                    })), [])
+                    source_addresses      = optional(list(string), [])
+                    source_ip_groups      = optional(list(string), [])
+                    destination_addresses = optional(list(string), [])
+                    destination_urls      = optional(list(string), [])
+                    destination_fqdns     = optional(list(string), [])
+                    destination_fqdn_tags = optional(list(string), [])
+                    terminate_tls         = optional(bool, null)
+                    web_categories        = optional(list(string), [])
+                  })), [])
+                })), [])
+                network_rule_collection = optional(list(object({
+                  name     = string
+                  priority = number
+                  action   = string
+                  rule = optional(list(object({
+                    name                  = string
+                    description           = optional(string, null)
+                    protocols             = list(string)
+                    destination_ports     = list(string)
+                    source_addresses      = optional(list(string), [])
+                    source_ip_groups      = optional(list(string), [])
+                    destination_addresses = optional(list(string), [])
+                    destination_ip_groups = optional(list(string), [])
+                    destination_fqdns     = optional(list(string), [])
+                  })), [])
+                })), [])
+                nat_rule_collection = optional(list(object({
+                  name     = string
+                  priority = number
+                  action   = string
+                  rule = optional(list(object({
+                    name                = string
+                    description         = optional(string, null)
+                    protocols           = list(string)
+                    source_addresses    = optional(list(string), [])
+                    source_ip_groups    = optional(list(string), [])
+                    destination_address = optional(string, "")
+                    destination_ports   = optional(list(string), [])
+                    translated_address  = optional(string, "")
+                    translated_port     = optional(string, "")
+                  })), [])
+                })), [])
               })), [])
             }), {})
           }), {})
           bastion = optional(object({
             enabled = optional(bool, false)
             config = optional(object({
-              address_prefix                = optional(string, "")
-              sku                           = optional(string, "Basic")
+              address_prefix     = optional(string, "")
+              sku                = optional(string, "Basic")
+              ip_connect_enabled = optional(bool, false)
+              tunneling_enabled  = optional(bool, false)
               availability_zones = optional(object({
                 zone_1 = optional(bool, true)
                 zone_2 = optional(bool, true)
@@ -240,24 +242,24 @@ variable "settings" {
           }), {})
           private_dns_resolver = optional(object({
             enabled = optional(bool, false)
-            config  = optional(object({
-               address_prefix_in = optional(string, "")
-               address_prefix_out = optional(string, "")
-               deploy_private_dns_resolver_inbound_endpoint       = optional(bool, false)
-               deploy_private_dns_resolver_outbound_endpoint      = optional(bool, false)
-               deploy_private_dns_resolver_dns_forwarding_ruleset = optional(bool, false)
-               private_dns_resolver_forwarding_rule               = optional(list(object({
-                name = string
+            config = optional(object({
+              address_prefix_in                                  = optional(string, "")
+              address_prefix_out                                 = optional(string, "")
+              deploy_private_dns_resolver_inbound_endpoint       = optional(bool, false)
+              deploy_private_dns_resolver_outbound_endpoint      = optional(bool, false)
+              deploy_private_dns_resolver_dns_forwarding_ruleset = optional(bool, false)
+              private_dns_resolver_forwarding_rule = optional(list(object({
+                name        = string
                 domain_name = string
                 target_dns_servers = list(object({
                   ip_address = string
-                  port = string
+                  port       = string
                 }))
-                enabled = optional(bool, true)
+                enabled  = optional(bool, true)
                 metadata = optional(map(string))
-               })), [])
+              })), [])
             }), {})
-          }),{})
+          }), {})
           spoke_virtual_network_resource_ids      = optional(list(string), [])
           enable_outbound_virtual_network_peering = optional(bool, false)
           enable_hub_network_mesh_peering         = optional(bool, false)
@@ -322,65 +324,65 @@ variable "settings" {
                 zone_3 = optional(bool, true)
               }), {})
               firewall_policy_rule_collection_groups = optional(list(object({
-                  name = string
+                name     = string
+                priority = number
+                application_rule_collection = optional(list(object({
+                  name     = string
                   priority = number
-                  application_rule_collection = optional(list(object({
-                    name = string
-                    priority = number
-                    action = string
-                    rule = optional(list(object({
-                      name = string
-                      description = optional(string, null)
-                      protocols = optional(list(object({
-                        type = string
-                        port = string
-                      })), [])
-                      http_headers = optional(list(object({
-                        name = string
-                        value = string
-                      })), [])
-                      source_addresses = optional(list(string), [])
-                      source_ip_groups = optional(list(string), [])
-                      destination_addresses = optional(list(string), [])
-                      destination_urls = optional(list(string), [])
-                      destination_fqdns = optional(list(string), [])
-		                  destination_fqdn_tags = optional(list(string), [])
-                      terminate_tls = optional(bool, null)
-                      web_categories = optional(list(string), [])
-                    })),[])
-                  })),[])
-                  network_rule_collection = optional(list(object({
-                      name = string
-                      priority = number
-                      action = string
-                      rule = optional(list(object({
-                        name = string
-                        description = optional(string, null)
-                        protocols = list(string)
-                        destination_ports = list(string)
-                        source_addresses = optional(list(string), [])
-                        source_ip_groups = optional(list(string), [])
-                        destination_addresses = optional(list(string), [])
-                        destination_ip_groups = optional(list(string), [])
-                        destination_fqdns    = optional(list(string), [])
-                      })),[])
-                    })),[])
-                  nat_rule_collection = optional(list(object({
-                      name = string
-                      priority = number
-                      action = string
-                      rule = optional(list(object({
-                        name = string
-                        description = optional(string, null)
-                        protocols = list(string)
-                        source_addresses = optional(list(string), [])
-                        source_ip_groups = optional(list(string), [])
-                        destination_address = optional(string,"")
-                        destination_ports  = optional(list(string), [])
-                        translated_address = optional(string, "")
-                        translated_port    = optional(string, "")
-                    })),[])
-                  })),[])
+                  action   = string
+                  rule = optional(list(object({
+                    name        = string
+                    description = optional(string, null)
+                    protocols = optional(list(object({
+                      type = string
+                      port = string
+                    })), [])
+                    http_headers = optional(list(object({
+                      name  = string
+                      value = string
+                    })), [])
+                    source_addresses      = optional(list(string), [])
+                    source_ip_groups      = optional(list(string), [])
+                    destination_addresses = optional(list(string), [])
+                    destination_urls      = optional(list(string), [])
+                    destination_fqdns     = optional(list(string), [])
+                    destination_fqdn_tags = optional(list(string), [])
+                    terminate_tls         = optional(bool, null)
+                    web_categories        = optional(list(string), [])
+                  })), [])
+                })), [])
+                network_rule_collection = optional(list(object({
+                  name     = string
+                  priority = number
+                  action   = string
+                  rule = optional(list(object({
+                    name                  = string
+                    description           = optional(string, null)
+                    protocols             = list(string)
+                    destination_ports     = list(string)
+                    source_addresses      = optional(list(string), [])
+                    source_ip_groups      = optional(list(string), [])
+                    destination_addresses = optional(list(string), [])
+                    destination_ip_groups = optional(list(string), [])
+                    destination_fqdns     = optional(list(string), [])
+                  })), [])
+                })), [])
+                nat_rule_collection = optional(list(object({
+                  name     = string
+                  priority = number
+                  action   = string
+                  rule = optional(list(object({
+                    name                = string
+                    description         = optional(string, null)
+                    protocols           = list(string)
+                    source_addresses    = optional(list(string), [])
+                    source_ip_groups    = optional(list(string), [])
+                    destination_address = optional(string, "")
+                    destination_ports   = optional(list(string), [])
+                    translated_address  = optional(string, "")
+                    translated_port     = optional(string, "")
+                  })), [])
+                })), [])
               })), [])
             }), {})
           }), {})
@@ -388,9 +390,9 @@ variable "settings" {
             enabled = optional(bool, false)
             routing_policies = optional(list(
               object({
-                name                          = optional(string, "")
-                destinations                  = optional(list(string), [])
-                next_hop                      = optional(string, "")
+                name         = optional(string, "")
+                destinations = optional(list(string), [])
+                next_hop     = optional(string, "")
               })
             ), [])
           }), {})

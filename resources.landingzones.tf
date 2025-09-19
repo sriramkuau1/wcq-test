@@ -53,7 +53,7 @@ resource "azurerm_subnet" "landingzones" {
   address_prefixes     = each.value.template.address_prefixes
 
   # Optional resource attributes
-  private_endpoint_network_policies_enabled     = each.value.template.private_endpoint_network_policies_enabled
+  private_endpoint_network_policies             = each.value.template.private_endpoint_network_policies
   private_link_service_network_policies_enabled = each.value.template.private_link_service_network_policies_enabled
   service_endpoints                             = each.value.template.service_endpoints
   service_endpoint_policy_ids                   = each.value.template.service_endpoint_policy_ids
@@ -133,17 +133,17 @@ resource "azurerm_route_table" "landingzones" {
   location            = each.value.template.location
 
   # Optional resource attributes
-  disable_bgp_route_propagation = each.value.template.disable_bgp_route_propagation
+  bgp_route_propagation_enabled = each.value.template.bgp_route_propagation_enabled
   tags                          = each.value.template.tags
 
   # Dynamic configuration blocks
   dynamic "route" {
     for_each = each.value.template.route
     content {
-      name                    = route.value["name"]
-      address_prefix          = route.value["address_prefix"]
-      next_hop_type           = route.value["next_hop_type"]
-      next_hop_in_ip_address  = route.value["next_hop_in_ip_address"]
+      name                   = route.value["name"]
+      address_prefix         = route.value["address_prefix"]
+      next_hop_type          = route.value["next_hop_type"]
+      next_hop_in_ip_address = route.value["next_hop_in_ip_address"]
     }
   }
 
@@ -212,13 +212,62 @@ resource "azurerm_virtual_network_peering" "landingzones" {
   ]
 }
 
+resource "azurerm_virtual_hub_connection" "landingzones" {
+  for_each = local.azurerm_virtual_hub_connection_landingzones
+
+  provider = azurerm.landingzones
+
+  # Mandatory resource attributes
+  name                      = each.value.template.name
+  virtual_hub_id            = each.value.template.virtual_hub_id
+  remote_virtual_network_id = each.value.template.remote_virtual_network_id
+
+  # Optional resource attributes
+  internet_security_enabled = each.value.template.internet_security_enabled
+
+  # Dynamic configuration blocks
+  dynamic "routing" {
+    for_each = each.value.template.routing
+    content {
+      # Optional attributes
+      associated_route_table_id = lookup(routing.value, "associated_route_table_id", null)
+      dynamic "propagated_route_table" {
+        for_each = lookup(routing.value, "propagated_route_table", local.empty_list)
+        content {
+          # Optional attributes
+          labels          = lookup(propagated_route_table.value, "labels", null)
+          route_table_ids = lookup(propagated_route_table.value, "route_table_ids", null)
+        }
+      }
+      dynamic "static_vnet_route" {
+        for_each = lookup(routing.value, "static_vnet_route", local.empty_list)
+        content {
+          # Optional attributes
+          name                = lookup(static_vnet_route.value, "name", null)
+          address_prefixes    = lookup(static_vnet_route.value, "address_prefixes", null)
+          next_hop_ip_address = lookup(static_vnet_route.value, "next_hop_ip_address", null)
+        }
+      }
+    }
+  }
+
+  # Set explicit dependencies
+  depends_on = [
+    azurerm_resource_group.landingzones,
+    azurerm_virtual_network.landingzones,
+  ]
+
+}
+
 resource "azurerm_role_assignment" "landingzones" {
   for_each = local.azurerm_role_assignment_landingzones
 
   provider = azurerm.landingzones
 
-  scope                            = each.value.template.scope
-  role_definition_id               = each.value.template.role_definition_id
+  scope = each.value.template.scope
+  # Optional resource attributes
+  role_definition_id               = each.value.template.role_definition_name == null ? each.value.template.role_definition_id : null
+  role_definition_name             = each.value.template.role_definition_id == null ? each.value.template.role_definition_name : null
   principal_id                     = each.value.template.principal_id
   skip_service_principal_aad_check = each.value.template.skip_service_principal_aad_check
 
@@ -275,5 +324,21 @@ resource "azurerm_consumption_budget_subscription" "landingzones" {
   # Set explicit dependencies
   depends_on = [
     azurerm_monitor_action_group.landingzones,
+  ]
+}
+
+# create subscription association with management group
+resource "azurerm_management_group_subscription_association" "landingzones" {
+  for_each = local.azurerm_management_group_association
+
+  provider = azurerm.landingzones
+
+  # Mandatory resource attributes
+  management_group_id = each.value.template.management_group_id
+  subscription_id     = each.value.template.subscription_id
+
+  # Set explicit dependencies
+  depends_on = [
+    azurerm_resource_group.landingzones,
   ]
 }

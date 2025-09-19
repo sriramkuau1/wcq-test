@@ -43,8 +43,8 @@ configure_management_resources = {
             {
               name                          = "Management"
               address_prefixes              = ["10.101.0.0/25"]
-              disable_bgp_route_propagation = true
-              routes = []
+              bgp_route_propagation_enabled = false
+              routes                        = []
               rules = [
                 {
                   name                       = "AllowInbound"
@@ -73,16 +73,16 @@ configure_management_resources = {
               service_endpoints = []
             }
           ]
-          hub_network_id               = "resource_id"
+          hub_network_id               = "hub-vnet"
           allow_virtual_network_access = true
           allow_forwarded_traffic      = true
           use_remote_gateways          = false
         }
       }
     ]
-    action_group_name       = "platformActionGroup"
-    action_group_shortname  = "platActnGrp"
-    contact_email           = "test@test.com"
+    action_group_name      = "platformActionGroup"
+    action_group_shortname = "platActnGrp"
+    contact_email          = "test@test.com"
   }
 
   location = "australiaeast"

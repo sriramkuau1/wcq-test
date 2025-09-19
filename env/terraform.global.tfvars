@@ -1,11 +1,12 @@
-root_parent_id = "tenant_id"
-tenant_id      = "tenant_id"
+root_parent_id = "tenant-id"
+tenant_id      = "tenant-id"
 root_id        = "mg-org"
 root_name      = "Contoso"
 
 subscription_id_connectivity = ""
 subscription_id_identity     = ""
 subscription_id_management   = ""
+subscription_id_landingzones = ""
 
 resource_type_names = {
   resource_group                              = "arg"
@@ -35,4 +36,8 @@ resource_type_names = {
   private_dns_resolver_inbound_endpoint       = "in"
   private_dns_resolver_outbound_endpoint      = "out"
   private_dns_resolver_dns_forwarding_ruleset = "dnspfrs"
+  data_collection_rule_vm_insights            = "dcr-vm-insights"
+  data_collection_rule_change_tracking        = "dcr-change-tracking"
+  data_collection_rule_defender_sql           = "dcr-defender-sql"
+  user_assigned_managed_identity              = "uami"
 }

@@ -12,36 +12,61 @@ locals {
 # NOTE: Need to catch error for resource_suffix when
 # no value for subscription_id is provided.
 locals {
-  enabled                         = var.enabled
-  root_id                         = var.root_id
-  tenant_id                       = var.tenant_id
-  resource_type_names             = var.resource_type_names
-  subscription_id                 = coalesce(var.subscription_id, "00000000-0000-0000-0000-000000000000")
-  settings                        = var.settings
-  location                        = var.location
-  tags                            = var.tags
-  resource_prefix                 = coalesce(var.resource_prefix, local.root_id)
-  resource_suffix                 = var.resource_suffix != local.empty_string ? "-${var.resource_suffix}" : local.empty_string
-  custom_azure_backup_geo_codes   = var.custom_azure_backup_geo_codes
-  custom_settings                 = var.custom_settings_by_resource_type
+  enabled                       = var.enabled
+  root_id                       = var.root_id
+  tenant_id                     = var.tenant_id
+  resource_type_names           = var.resource_type_names
+  subscription_id               = coalesce(var.subscription_id, "00000000-0000-0000-0000-000000000000")
+  settings                      = var.settings
+  location                      = var.location
+  tags                          = var.tags
+  resource_prefix               = coalesce(var.resource_prefix, local.root_id)
+  resource_suffix               = var.resource_suffix != local.empty_string ? "-${var.resource_suffix}" : local.empty_string
+  custom_azure_backup_geo_codes = var.custom_azure_backup_geo_codes
+  custom_settings               = var.custom_settings_by_resource_type
 }
 
 # Extract individual custom settings blocks from
 # the custom_settings_by_resource_type variable.
 locals {
-  custom_settings_rsg                       = try(local.custom_settings.azurerm_resource_group["identity"], local.empty_map)
-  custom_settings_virtual_network           = try(local.custom_settings.azurerm_virtual_network["identity"], local.empty_map)
-  custom_settings_subnets                   = try(local.custom_settings.azurerm_subnet["identity"], local.empty_map)
-  custom_settings_network_security_groups   = try(local.custom_settings.azurerm_network_security_group["identity"], local.empty_map)
-  custom_settings_route_tables              = try(local.custom_settings.azurerm_route_table["identity"], local.empty_map)
-  custom_settings_key_vault                 = try(local.custom_settings.azurerm_key_vault["identity"], local.empty_map)
+  custom_settings_rsg                     = try(local.custom_settings.azurerm_resource_group["identity"], local.empty_map)
+  custom_settings_virtual_network         = try(local.custom_settings.azurerm_virtual_network["identity"], local.empty_map)
+  custom_settings_subnets                 = try(local.custom_settings.azurerm_subnet["identity"], local.empty_map)
+  custom_settings_network_security_groups = try(local.custom_settings.azurerm_network_security_group["identity"], local.empty_map)
+  custom_settings_route_tables            = try(local.custom_settings.azurerm_route_table["identity"], local.empty_map)
+  custom_settings_key_vault               = try(local.custom_settings.azurerm_key_vault["identity"], local.empty_map)
 }
 
 # Logic to determine whether specific resources
 # should be created by this module
 locals {
-  deploy_identity                          = local.enabled && local.settings.identity.enabled
-  deploy_network                           = local.deploy_identity && local.settings.spoke_networks != local.empty_list
+  result_when_location_missing = {
+    enabled = false
+  }
+  deploy_identity = local.enabled && local.settings.identity.enabled
+  deploy_network  = local.deploy_identity && local.settings.spoke_networks != local.empty_list
+  spokes_by_location = {
+    for spoke_network in local.settings.spoke_networks :
+    coalesce(spoke_network.config.location, local.location) => spoke_network
+  }
+  deploy_spoke_network = {
+    for location, spoke_network in local.spokes_by_location :
+    location =>
+    local.enabled &&
+    spoke_network.enabled
+  }
+  deploy_spoke_peering = {
+    for location, spoke_network in local.spokes_by_location :
+    location =>
+    local.deploy_network &&
+    spoke_network.config.hub_network_id != local.empty_string
+  }
+  deploy_vwan_hub_connection = {
+    for location, spoke_network in local.spokes_by_location :
+    location =>
+    local.deploy_network &&
+    spoke_network.config.vwan_hub_network_id != local.empty_string
+  }
 }
 
 # Archetype configuration overrides
@@ -72,6 +97,23 @@ locals {
   spoke_network_locations = distinct(local.all_spoke_network_locations)
 }
 
+# Logic to determine whether specific resources
+# should be created by this module
+# - Resource Groups
+locals {
+  deploy_network_resource_group = {
+    for location in local.spoke_network_locations :
+    "network_${location}" =>
+    local.enabled &&
+    lookup(local.spokes_by_location, location, local.result_when_location_missing).enabled
+  }
+  deploy_identity_resource_group = {
+    identity = local.deploy_identity
+    alerts   = local.deploy_identity
+  }
+  deploy_resource_groups = merge(local.deploy_network_resource_group, local.deploy_identity_resource_group)
+}
+
 # Configuration settings for resource type:
 #  - azurerm_resource_group
 locals {
@@ -93,12 +135,13 @@ locals {
     for scope, name in local.resource_group_name :
     scope => {
       # Resource logic attributes
-      resource_id = "/subscriptions/${local.subscription_id}/resourceGroups/${name}"
-      scope       = scope
+      resource_id       = "/subscriptions/${local.subscription_id}/resourceGroups/${name}"
+      scope             = scope
+      managed_by_module = local.deploy_resource_groups[scope]
       # Resource definition attributes
-      name        = name
-      location    = local.location
-      tags        = local.tags
+      name     = name
+      location = local.location
+      tags     = try(local.custom_settings_rsg[scope].tags, local.tags)
     }
   }
 }
@@ -110,7 +153,7 @@ locals {
     for identifier, spoke_network in local.spoke_networks_by_identifier :
     identifier =>
     try(local.custom_settings.azurerm_virtual_network[identifier].name,
-    "${local.resource_type_names.virtual_network}-${lookup(local.custom_azure_backup_geo_codes, spoke_network.config.location, spoke_network.config.location)}-${local.resource_prefix}-${replace(spoke_network.config.address_space[0],"/","_")}${local.resource_suffix}")
+    "${local.resource_type_names.virtual_network}-${lookup(local.custom_azure_backup_geo_codes, spoke_network.config.location, spoke_network.config.location)}-${local.resource_prefix}-${replace(spoke_network.config.address_space[0], "/", "_")}${local.resource_suffix}")
   }
   virtual_network_resource_id_prefix = {
     for location in local.spoke_network_locations :
@@ -126,7 +169,8 @@ locals {
     for identifier, spoke_network in local.spoke_networks_by_identifier :
     {
       # Resource logic attributes
-      resource_id = local.virtual_network_resource_id[identifier]
+      resource_id       = local.virtual_network_resource_id[identifier]
+      managed_by_module = local.deploy_spoke_network[spoke_network.config.location]
       # Resource definition attributes
       name                 = local.virtual_network_name[identifier]
       resource_group_name  = local.resource_group_name["network_${spoke_network.config.location}"]
@@ -162,18 +206,19 @@ locals {
           subnet,
           {
             # Resource logic attributes
-            resource_id                   = "${local.virtual_network_resource_id[identifier]}/subnets/${subnet.name}"
-            location                      = spoke_network.config.location
-            vnet_identifier               = identifier
-            network_security_group_id     = "${local.network_security_group_resource_id_prefix[spoke_network.config.location]}/${try(local.custom_settings_network_security_groups[identifier][subnet.name].name, "${local.resource_type_names.network_security_group}-${lookup(local.custom_azure_backup_geo_codes, spoke_network.config.location, spoke_network.config.location)}-${local.resource_prefix}-${subnet.name}${local.resource_suffix}")}"
-            route_table_id                = "${local.route_table_resource_id_prefix[spoke_network.config.location]}/${try(local.custom_settings_route_tables[identifier][subnet.name].name,"${local.resource_type_names.route_table}-${lookup(local.custom_azure_backup_geo_codes, spoke_network.config.location, spoke_network.config.location)}-${local.resource_prefix}-${subnet.name}${local.resource_suffix}")}"
-            routes                        = coalesce(subnet.routes, local.empty_list)
-            rules                         = coalesce(subnet.rules, local.empty_list)
+            resource_id               = "${local.virtual_network_resource_id[identifier]}/subnets/${subnet.name}"
+            location                  = spoke_network.config.location
+            vnet_identifier           = identifier
+            network_security_group_id = "${local.network_security_group_resource_id_prefix[spoke_network.config.location]}/${try(local.custom_settings_network_security_groups[identifier][subnet.name].name, "${local.resource_type_names.network_security_group}-${lookup(local.custom_azure_backup_geo_codes, spoke_network.config.location, spoke_network.config.location)}-${local.resource_prefix}-${subnet.name}${local.resource_suffix}")}"
+            route_table_id            = "${local.route_table_resource_id_prefix[spoke_network.config.location]}/${try(local.custom_settings_route_tables[identifier][subnet.name].name, "${local.resource_type_names.route_table}-${lookup(local.custom_azure_backup_geo_codes, spoke_network.config.location, spoke_network.config.location)}-${local.resource_prefix}-${subnet.name}${local.resource_suffix}")}"
+            routes                    = coalesce(subnet.routes, local.empty_list)
+            rules                     = coalesce(subnet.rules, local.empty_list)
+            managed_by_module         = local.deploy_spoke_network[spoke_network.config.location]
             # Resource definition attributes
             name                                          = subnet.name
             resource_group_name                           = local.resource_group_name["network_${spoke_network.config.location}"]
             virtual_network_name                          = local.virtual_network_name[identifier]
-            private_endpoint_network_policies_enabled     = try(local.custom_settings_subnets[identifier][subnet.name].private_endpoint_network_policies_enabled, false)
+            private_endpoint_network_policies             = try(local.custom_settings_subnets[identifier][subnet.name].private_endpoint_network_policies, "Disabled")
             private_link_service_network_policies_enabled = try(local.custom_settings_subnets[identifier][subnet.name].private_link_service_network_policies_enabled, false)
             service_endpoints                             = try(local.custom_settings_subnets[identifier][subnet.name].service_endpoints, subnet.service_endpoints)
             service_endpoint_policy_ids                   = try(local.custom_settings_subnets[identifier][subnet.name].service_endpoint_policy_ids, null)
@@ -195,10 +240,11 @@ locals {
   azurerm_network_security_group = [
     for subnet in local.azurerm_subnet : {
       # Resource logic attributes
-      resource_id   = subnet.network_security_group_id
-      subnet_id     = subnet.resource_id
+      resource_id       = subnet.network_security_group_id
+      subnet_id         = subnet.resource_id
+      managed_by_module = local.deploy_spoke_network[subnet.location]
       # Resource definition attributes
-      name                = try(local.custom_settings_network_security_groups[subnet.vnet_identifier][subnet.name].name, "${try(split("/", subnet.network_security_group_id)[8],"")}")
+      name                = try(local.custom_settings_network_security_groups[subnet.vnet_identifier][subnet.name].name, try(split("/", subnet.network_security_group_id)[8], ""))
       resource_group_name = try(local.custom_settings_network_security_groups[subnet.vnet_identifier][subnet.name].resource_group_name, subnet.resource_group_name)
       location            = try(local.custom_settings_network_security_groups[subnet.vnet_identifier][subnet.name].location, subnet.location)
       tags                = try(local.custom_settings_network_security_groups[subnet.vnet_identifier][subnet.name].tags, local.tags)
@@ -213,14 +259,15 @@ locals {
   azurerm_route_table = [
     for subnet in local.azurerm_subnet : {
       # Resource logic attributes
-      resource_id   = subnet.route_table_id
-      subnet_id     = subnet.resource_id
+      resource_id       = subnet.route_table_id
+      subnet_id         = subnet.resource_id
+      managed_by_module = length(subnet.routes) > 0 ? local.deploy_spoke_network[subnet.location] : false
       # Resource definition attributes
-      name                          = try(local.custom_settings_route_tables[subnet.vnet_identifier][subnet.name].name, "${try(split("/", subnet.route_table_id)[8],"")}")
+      name                          = try(local.custom_settings_route_tables[subnet.vnet_identifier][subnet.name].name, try(split("/", subnet.route_table_id)[8], ""))
       resource_group_name           = try(local.custom_settings_route_tables[subnet.vnet_identifier][subnet.name].resource_group_name, subnet.resource_group_name)
       location                      = try(local.custom_settings_route_tables[subnet.vnet_identifier][subnet.name].location, subnet.location)
       tags                          = try(local.custom_settings_route_tables[subnet.vnet_identifier][subnet.name].tags, local.tags)
-      disable_bgp_route_propagation = try(local.custom_settings_route_tables[subnet.vnet_identifier][subnet.name].disable_bgp_route_propagation, subnet.disable_bgp_route_propagation)
+      bgp_route_propagation_enabled = try(local.custom_settings_route_tables[subnet.vnet_identifier][subnet.name].bgp_route_propagation_enabled, subnet.bgp_route_propagation_enabled)
       route                         = try(local.custom_settings_route_tables[subnet.vnet_identifier][subnet.name].route, subnet.routes)
     }
   ]
@@ -232,8 +279,9 @@ locals {
   azurerm_subnet_network_security_group_association = [
     for subnet in local.azurerm_subnet : {
       # Resource logic attributes
-      network_security_group_id   = subnet.network_security_group_id
-      subnet_id                   = subnet.resource_id
+      network_security_group_id = subnet.network_security_group_id
+      subnet_id                 = subnet.resource_id
+      managed_by_module         = local.deploy_spoke_network[subnet.location]
     }
   ]
 }
@@ -244,8 +292,9 @@ locals {
   azurerm_subnet_route_table_association = [
     for subnet in local.azurerm_subnet : {
       # Resource logic attributes
-      route_table_id  = subnet.route_table_id
-      subnet_id       = subnet.resource_id
+      route_table_id    = subnet.route_table_id
+      subnet_id         = subnet.resource_id
+      managed_by_module = length(subnet.routes) > 0 ? local.deploy_spoke_network[subnet.location] : false
     }
   ]
 }
@@ -257,7 +306,7 @@ locals {
     for identifier, spoke_network in local.spoke_networks_by_identifier :
     identifier =>
     try(local.custom_settings.azurerm_virtual_network_peering[identifier].name,
-    "peering-${try(split("/", spoke_network.config.hub_network_id)[2],"")}")
+    "peering-${try(split("/", spoke_network.config.hub_network_id)[2], "")}")
   }
   virtual_network_peering_resource_id_prefix = {
     for identifier, vnet_prefix in local.virtual_network_resource_id :
@@ -273,17 +322,57 @@ locals {
     for identifier, spoke_network in local.spoke_networks_by_identifier :
     {
       # Resource logic attributes
-      resource_id = local.virtual_network_peering_resource_id[identifier]
+      resource_id       = local.virtual_network_peering_resource_id[identifier]
+      managed_by_module = local.deploy_spoke_peering[spoke_network.config.location]
       # Resource definition attributes
-      name                        = local.virtual_network_peering_name[identifier]
-      virtual_network_name        = local.virtual_network_name[identifier]
-      resource_group_name         = local.resource_group_name["network_${spoke_network.config.location}"]
-      remote_virtual_network_id   = try(spoke_network.config.hub_network_id, "")
+      name                      = local.virtual_network_peering_name[identifier]
+      virtual_network_name      = local.virtual_network_name[identifier]
+      resource_group_name       = local.resource_group_name["network_${spoke_network.config.location}"]
+      remote_virtual_network_id = try(spoke_network.config.hub_network_id, "")
       # Optional definition attributes
-      allow_virtual_network_access  = try(spoke_network.config.allow_virtual_network_access, true)
-      allow_forwarded_traffic       = try(spoke_network.config.allow_forwarded_traffic, true)
-      allow_gateway_transit         = false
-      use_remote_gateways           = try(spoke_network.config.use_remote_gateways, false)
+      allow_virtual_network_access = try(spoke_network.config.allow_virtual_network_access, true)
+      allow_forwarded_traffic      = try(spoke_network.config.allow_forwarded_traffic, true)
+      allow_gateway_transit        = false
+      use_remote_gateways          = try(spoke_network.config.use_remote_gateways, false)
+    }
+  ]
+}
+
+# Configuration settings for resource type:
+#  - azurerm_virtual_hub_connection
+locals {
+  virtual_hub_connection_name = {
+    for identifier, spoke_network in local.spoke_networks_by_identifier :
+    identifier =>
+    try(local.custom_settings.virtual_hub_connection_name[identifier].name,
+    "peering-${uuidv5("url", local.virtual_network_resource_id[identifier])}")
+  }
+  virtual_hub_connection_resource_id = {
+    for identifier, spoke_network in local.spoke_networks_by_identifier :
+    identifier =>
+    "${spoke_network.config.vwan_hub_network_id}/hubVirtualNetworkConnections/${local.virtual_hub_connection_name[identifier]}"
+  }
+  azurerm_virtual_hub_connection = [
+    for identifier, spoke_network in local.spoke_networks_by_identifier :
+    {
+      # Resource logic attributes
+      resource_id       = local.virtual_hub_connection_resource_id[identifier]
+      managed_by_module = local.deploy_vwan_hub_connection[spoke_network.config.location]
+      # Resource definition attributes
+      name                      = local.virtual_hub_connection_name[identifier]
+      virtual_hub_id            = spoke_network.config.vwan_hub_network_id
+      remote_virtual_network_id = local.virtual_network_resource_id[identifier]
+      # Optional definition attributes
+      internet_security_enabled = try(spoke_network.config.internet_security_enabled, true)
+      # routing                   = local.empty_list
+      routing = [{
+        propagated_route_table = [{
+          labels          = ["none"]
+          route_table_ids = ["${spoke_network.config.vwan_hub_network_id}/hubRouteTables/noneRouteTable"]
+        }]
+        static_vnet_route         = []
+        associated_route_table_id = "${spoke_network.config.vwan_hub_network_id}/hubRouteTables/defaultRouteTable"
+      }]
     }
   ]
 }
@@ -293,13 +382,13 @@ locals {
 locals {
   key_vault_resource_id = "${local.resource_group_resource_id["identity"]}/providers/Microsoft.KeyVault/vaults/${local.azurerm_key_vault.name}"
   azurerm_key_vault = {
-    name                      = lookup(local.custom_settings_key_vault, "name", "${local.resource_type_names.key_vault}-${local.resource_type_names.organization}-${lookup(local.custom_azure_backup_geo_codes, local.location, local.location)}-${local.resource_prefix}-01${local.resource_suffix}")
-    resource_group_name       = lookup(local.custom_settings_key_vault, "resource_group_name", local.resource_group_name["identity"])
-    location                  = lookup(local.custom_settings_key_vault, "location", local.location)
-    tenant_id                 = lookup(local.custom_settings_key_vault, "tenant_id", local.tenant_id)
-    purge_protection_enabled  = try(local.settings.config.key_vault.purge_protection_enabled, true)
-    sku_name                  = "standard"
-    tags                      = lookup(local.custom_settings_route_tables, "tags", local.tags)
+    name                     = lookup(local.custom_settings_key_vault, "name", "${local.resource_type_names.key_vault}-${local.resource_type_names.organization}-${lookup(local.custom_azure_backup_geo_codes, local.location, local.location)}-${local.resource_prefix}-01${local.resource_suffix}")
+    resource_group_name      = lookup(local.custom_settings_key_vault, "resource_group_name", local.resource_group_name["identity"])
+    location                 = lookup(local.custom_settings_key_vault, "location", local.location)
+    tenant_id                = lookup(local.custom_settings_key_vault, "tenant_id", local.tenant_id)
+    purge_protection_enabled = try(local.settings.config.key_vault.purge_protection_enabled, true)
+    sku_name                 = "standard"
+    tags                     = lookup(local.custom_settings_route_tables, "tags", local.tags)
   }
 }
 
@@ -320,7 +409,8 @@ locals {
           key != "resource_id" &&
           key != "managed_by_module"
         }
-        managed_by_module = local.deploy_identity
+        scope             = resource.scope
+        managed_by_module = resource.managed_by_module
       }
     ]
     azurerm_virtual_network = [
@@ -335,7 +425,7 @@ locals {
           key != "resource_id" &&
           key != "managed_by_module"
         }
-        managed_by_module = local.deploy_network
+        managed_by_module = resource.managed_by_module
       }
     ]
     azurerm_subnet = [
@@ -356,7 +446,7 @@ locals {
           key != "routes" &&
           key != "rules"
         }
-        managed_by_module = local.deploy_network
+        managed_by_module = resource.managed_by_module
       }
     ]
     azurerm_network_security_group = [
@@ -371,7 +461,7 @@ locals {
           key != "resource_id" &&
           key != "managed_by_module"
         }
-        managed_by_module = local.deploy_network
+        managed_by_module = resource.managed_by_module
       }
     ]
     azurerm_route_table = [
@@ -386,13 +476,13 @@ locals {
           key != "resource_id" &&
           key != "managed_by_module"
         }
-        managed_by_module = local.deploy_network
+        managed_by_module = resource.managed_by_module
       }
     ]
     azurerm_subnet_network_security_group_association = [
       for resource in local.azurerm_subnet_network_security_group_association :
       {
-        resource_id   = resource.subnet_id
+        resource_id = resource.subnet_id
         template = {
           for key, value in resource :
           key => value
@@ -400,13 +490,13 @@ locals {
           key != "resource_id" &&
           key != "managed_by_module"
         }
-        managed_by_module = local.deploy_network
+        managed_by_module = resource.managed_by_module
       }
     ]
     azurerm_subnet_route_table_association = [
       for resource in local.azurerm_subnet_route_table_association :
       {
-        resource_id   = resource.subnet_id
+        resource_id = resource.subnet_id
         template = {
           for key, value in resource :
           key => value
@@ -414,7 +504,7 @@ locals {
           key != "resource_id" &&
           key != "managed_by_module"
         }
-        managed_by_module = local.deploy_network
+        managed_by_module = resource.managed_by_module
       }
     ]
     azurerm_virtual_network_peering = [
@@ -429,7 +519,22 @@ locals {
           key != "resource_id" &&
           key != "managed_by_module"
         }
-        managed_by_module = local.deploy_network
+        managed_by_module = resource.managed_by_module
+      }
+    ]
+    azurerm_virtual_hub_connection = [
+      for resource in local.azurerm_virtual_hub_connection :
+      {
+        resource_id   = resource.resource_id
+        resource_name = resource.name
+        template = {
+          for key, value in resource :
+          key => value
+          if local.deploy_network &&
+          key != "resource_id" &&
+          key != "managed_by_module"
+        }
+        managed_by_module = resource.managed_by_module
       }
     ]
     azurerm_key_vault = [

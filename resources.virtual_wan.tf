@@ -266,30 +266,30 @@ resource "azurerm_firewall_policy_rule_collection_group" "virtual_wan" {
       dynamic "rule" {
         for_each = application_rule_collection.value["rule"]
         content {
-          name = rule.value["name"]
+          name        = rule.value["name"]
           description = rule.value["description"]
           dynamic "protocols" {
             for_each = rule.value["protocols"]
             content {
-              type  = protocols.value["type"]
+              type = protocols.value["type"]
               port = protocols.value["port"]
             }
           }
           dynamic "http_headers" {
             for_each = rule.value["http_headers"]
             content {
-              name = http_headers.value["name"]
+              name  = http_headers.value["name"]
               value = http_headers.value["value"]
             }
           }
-          source_addresses  = rule.value["source_addresses"]
-          source_ip_groups  = rule.value["source_ip_groups"]
+          source_addresses      = rule.value["source_addresses"]
+          source_ip_groups      = rule.value["source_ip_groups"]
           destination_addresses = rule.value["destination_addresses"]
-          destination_urls = rule.value["destination_urls"]
-          destination_fqdns = rule.value["destination_fqdns"]
+          destination_urls      = rule.value["destination_urls"]
+          destination_fqdns     = rule.value["destination_fqdns"]
           destination_fqdn_tags = rule.value["destination_fqdn_tags"]
-          terminate_tls = rule.value["terminate_tls"]
-          web_categories = rule.value["web_categories"]
+          terminate_tls         = rule.value["terminate_tls"]
+          web_categories        = rule.value["web_categories"]
         }
       }
     }
@@ -327,15 +327,15 @@ resource "azurerm_firewall_policy_rule_collection_group" "virtual_wan" {
       dynamic "rule" {
         for_each = nat_rule_collection.value["rule"]
         content {
-          name                  = rule.value["name"]
-          description           = rule.value["description"]
-          protocols             = rule.value["protocols"]
-          source_addresses      = rule.value["source_addresses"]
-          source_ip_groups      = rule.value["source_ip_groups"]
-          destination_address   = rule.value["destination_address"]
-          destination_ports     = rule.value["destination_ports"]
-          translated_address    = rule.value["translated_address"]
-          translated_port       = rule.value["translated_port"]
+          name                = rule.value["name"]
+          description         = rule.value["description"]
+          protocols           = rule.value["protocols"]
+          source_addresses    = rule.value["source_addresses"]
+          source_ip_groups    = rule.value["source_ip_groups"]
+          destination_address = rule.value["destination_address"]
+          destination_ports   = rule.value["destination_ports"]
+          translated_address  = rule.value["translated_address"]
+          translated_port     = rule.value["translated_port"]
         }
       }
     }
@@ -418,8 +418,8 @@ resource "azurerm_virtual_hub_routing_intent" "virtual_wan" {
   provider = azurerm.connectivity
 
   # Mandatory resource attributes
-  name                      = each.value.template.name
-  virtual_hub_id            = each.value.template.virtual_hub_id
+  name           = each.value.template.name
+  virtual_hub_id = each.value.template.virtual_hub_id
 
   dynamic "routing_policy" {
     for_each = each.value.template.routing_policy

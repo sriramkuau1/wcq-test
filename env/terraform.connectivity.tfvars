@@ -59,8 +59,10 @@ configure_connectivity_resources = {
           bastion = {
             enabled = true
             config = {
-              address_prefix = "10.100.2.0/24"
-              sku_tier       = ""
+              address_prefix     = "10.100.2.0/24"
+              sku                = "Basic" //Basic or Standard
+              ip_connect_enabled = true
+              tunneling_enabled  = true
               availability_zones = {
                 zone_1 = true
                 zone_2 = true
@@ -69,9 +71,8 @@ configure_connectivity_resources = {
             }
           }
           spoke_virtual_network_resource_ids = [
-            "spoke_resource_id_1",
-            "spoke_resource_id_2",
-            "spoke_resource_id_3"
+            # "spoke_resource_id_1",
+
           ]
           enable_outbound_virtual_network_peering = true
           enable_hub_network_mesh_peering         = false
@@ -107,18 +108,18 @@ configure_connectivity_resources = {
           azure_cosmos_db_mongodb              = true
           azure_cosmos_db_sql                  = true
           azure_cosmos_db_table                = true
-          azure_databricks                     = true
+          azure_databricks                     = false //Potential impacts to the Azure Databricks portal (https://accounts.azuredatabricks.net/login) for public Azure Databricks.
           azure_data_explorer                  = true
-          azure_data_factory                   = true
-          azure_data_factory_portal            = true
+          azure_data_factory                   = false //Enabling this will impact the public Data Factory portal (https://adf.azure.com/en/) for public Azure Data Factory resources.
+          azure_data_factory_portal            = false //Enabling this will impact the public Data Factory portal (https://adf.azure.com/en/) for public Azure Data Factory resources
           azure_data_health_data_services      = true
           azure_data_lake_file_system_gen2     = true
           azure_database_for_mariadb_server    = true
           azure_database_for_mysql_server      = true
           azure_database_for_postgresql_server = true
           azure_digital_twins                  = true
-          azure_event_grid_domain              = true
-          azure_event_grid_topic               = true
+          azure_event_grid_domain              = false //Affects Push services with private link services, Pull services remain unaffected
+          azure_event_grid_topic               = false //Affects Push services with private link services, Pull services remain unaffected
           azure_event_hubs_namespace           = true
           azure_file_sync                      = true
           azure_hdinsights                     = true
@@ -131,21 +132,21 @@ configure_connectivity_resources = {
           azure_managed_disks                  = true
           azure_media_services                 = true
           azure_migrate                        = true
-          azure_monitor                        = true
+          azure_monitor                        = false //Azure Monitor when enabled on private links has specific considerations due to its use of shared endpoints that are not resource-specific. This unique requirement needs to be managed carefully. For more information, see https://learn.microsoft.com/en-us/azure/azure-monitor/logs/private-link-security#azure-monitor-private-links-rely-on-your-dns.
           azure_purview_account                = true
-          azure_purview_studio                 = true
+          azure_purview_studio                 = false //Affects Purview public web portal if not configured to use private endpoints from the outset.
           azure_relay_namespace                = true
           azure_search_service                 = true
           azure_service_bus_namespace          = true
           azure_site_recovery                  = true
           azure_sql_database_sqlserver         = true
-          azure_synapse_analytics_dev          = true
-          azure_synapse_analytics_sql          = true
-          azure_synapse_studio                 = true
+          azure_synapse_analytics_dev          = false //Interferes with Synapse Studio Portal (https://web.azuresynapse.net/en/) for Azure Synapse Workspaces not using private endpoints.
+          azure_synapse_analytics_sql          = false //Interferes with Synapse Studio Portal (https://web.azuresynapse.net/en/) for Azure Synapse Workspaces not using private endpoints. Further details are available here.
+          azure_synapse_studio                 = false //Interferes with Synapse Studio Portal (https://web.azuresynapse.net/en/) for Azure Synapse Workspaces not using private endpoints. Further details are available here.
           azure_web_apps_sites                 = true
           azure_web_apps_static_sites          = true
           cognitive_services_account           = true
-          microsoft_power_bi                   = true
+          microsoft_power_bi                   = false //Affects Power BI and Microsoft Fabric services if not configured to use private endpoints from the outset
           signalr                              = true
           signalr_webpubsub                    = true
           storage_account_blob                 = true

@@ -56,10 +56,11 @@ resource "azurerm_role_assignment" "policy_assignment" {
   for_each = local.empty_map
 
   # Mandatory resource attributes
-  name         = basename(each.key)
-  scope        = each.value.scope_id
-  principal_id = each.value.principal_id
-
+  name                 = basename(each.key)
+  scope                = each.value.scope_id
+  principal_id         = each.value.principal_id
+  role_definition_name = lookup(each.value, "role_definition_name", null)
+  role_definition_id   = lookup(each.value, "role_definition_id", null)
 }
 
 resource "time_sleep" "after_azurerm_role_assignment" {

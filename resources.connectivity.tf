@@ -55,7 +55,7 @@ resource "azurerm_subnet" "connectivity" {
   address_prefixes     = each.value.template.address_prefixes
 
   # Optional resource attributes
-  private_endpoint_network_policies_enabled     = each.value.template.private_endpoint_network_policies_enabled
+  private_endpoint_network_policies             = each.value.template.private_endpoint_network_policies
   private_link_service_network_policies_enabled = each.value.template.private_link_service_network_policies_enabled
   service_endpoints                             = each.value.template.service_endpoints
   service_endpoint_policy_ids                   = each.value.template.service_endpoint_policy_ids
@@ -127,9 +127,9 @@ resource "azurerm_bastion_host" "connectivity" {
   provider = azurerm.connectivity
 
   # Mandatory resource attributes
-  name                 = each.value.template.name
-  resource_group_name  = each.value.template.resource_group_name
-  location             = each.value.template.location
+  name                = each.value.template.name
+  resource_group_name = each.value.template.resource_group_name
+  location            = each.value.template.location
 
   ip_configuration {
     name                 = "configuration"
@@ -138,7 +138,9 @@ resource "azurerm_bastion_host" "connectivity" {
   }
 
   # Optional resource attributes
-  sku   = each.value.template.sku
+  sku                = each.value.template.sku
+  ip_connect_enabled = each.value.template.ip_connect_enabled
+  tunneling_enabled  = each.value.template.tunneling_enabled
 
   # Set explicit dependencies
   depends_on = [
@@ -434,30 +436,30 @@ resource "azurerm_firewall_policy_rule_collection_group" "connectivity" {
       dynamic "rule" {
         for_each = application_rule_collection.value["rule"]
         content {
-          name = rule.value["name"]
+          name        = rule.value["name"]
           description = rule.value["description"]
           dynamic "protocols" {
             for_each = rule.value["protocols"]
             content {
-              type  = protocols.value["type"]
+              type = protocols.value["type"]
               port = protocols.value["port"]
             }
           }
           dynamic "http_headers" {
             for_each = rule.value["http_headers"]
             content {
-              name = http_headers.value["name"]
+              name  = http_headers.value["name"]
               value = http_headers.value["value"]
             }
           }
-          source_addresses  = rule.value["source_addresses"]
-          source_ip_groups  = rule.value["source_ip_groups"]
+          source_addresses      = rule.value["source_addresses"]
+          source_ip_groups      = rule.value["source_ip_groups"]
           destination_addresses = rule.value["destination_addresses"]
-          destination_urls = rule.value["destination_urls"]
-          destination_fqdns = rule.value["destination_fqdns"]
+          destination_urls      = rule.value["destination_urls"]
+          destination_fqdns     = rule.value["destination_fqdns"]
           destination_fqdn_tags = rule.value["destination_fqdn_tags"]
-          terminate_tls = rule.value["terminate_tls"]
-          web_categories = rule.value["web_categories"]
+          terminate_tls         = rule.value["terminate_tls"]
+          web_categories        = rule.value["web_categories"]
         }
       }
     }
@@ -495,15 +497,15 @@ resource "azurerm_firewall_policy_rule_collection_group" "connectivity" {
       dynamic "rule" {
         for_each = nat_rule_collection.value["rule"]
         content {
-          name                  = rule.value["name"]
-          description           = rule.value["description"]
-          protocols             = rule.value["protocols"]
-          source_addresses      = rule.value["source_addresses"]
-          source_ip_groups      = rule.value["source_ip_groups"]
-          destination_address   = rule.value["destination_address"]
-          destination_ports     = rule.value["destination_ports"]
-          translated_address    = rule.value["translated_address"]
-          translated_port       = rule.value["translated_port"]
+          name                = rule.value["name"]
+          description         = rule.value["description"]
+          protocols           = rule.value["protocols"]
+          source_addresses    = rule.value["source_addresses"]
+          source_ip_groups    = rule.value["source_ip_groups"]
+          destination_address = rule.value["destination_address"]
+          destination_ports   = rule.value["destination_ports"]
+          translated_address  = rule.value["translated_address"]
+          translated_port     = rule.value["translated_port"]
         }
       }
     }
@@ -694,9 +696,9 @@ resource "azurerm_private_dns_resolver_dns_forwarding_ruleset" "connectivity" {
   provider = azurerm.connectivity
 
   # Mandatory resource attributes
-  name                = each.value.template.name
-  resource_group_name = each.value.template.resource_group_name
-  location            = each.value.template.location
+  name                                       = each.value.template.name
+  resource_group_name                        = each.value.template.resource_group_name
+  location                                   = each.value.template.location
   private_dns_resolver_outbound_endpoint_ids = each.value.template.private_dns_resolver_outbound_endpoint_ids
 
   # Optional resource attributes
@@ -719,7 +721,7 @@ resource "azurerm_private_dns_resolver_forwarding_rule" "connectivity" {
   dns_forwarding_ruleset_id = each.value.template.dns_forwarding_ruleset_id
   domain_name               = each.value.template.domain_name
   enabled                   = each.value.template.enabled
-  dynamic target_dns_servers {
+  dynamic "target_dns_servers" {
     for_each = each.value.template.target_dns_servers
     content {
       ip_address = target_dns_servers.value["ip_address"]

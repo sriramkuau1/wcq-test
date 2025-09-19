@@ -138,12 +138,41 @@ locals {
   }
 }
 
+# The following locals are used to build the map of Virtual
+# Network Connections with vWAN Hub to deploy.
+locals {
+  azurerm_virtual_hub_connection_management = {
+    for resource in module.management_resources.configuration.azurerm_virtual_hub_connection :
+    resource.resource_id => resource
+    if resource.managed_by_module
+  }
+}
+
 # The following locals are used to build the map of action
 # groups to deploy.
 locals {
   azurerm_monitor_action_group_management = {
     for resource in module.management_resources.configuration.azurerm_monitor_action_group :
     resource.resource_name => resource
+    if resource.managed_by_module
+  }
+}
+
+# The following locals are used to build the map of UAMI
+# resources to deploy.
+locals {
+  azurerm_user_assigned_identity_management = {
+    for resource in module.management_resources.configuration.azurerm_user_assigned_identity :
+    resource.resource_id => resource
+    if resource.managed_by_module
+  }
+}
+
+# The following locals are used to build the map of the DCRs
+locals {
+  azurerm_monitor_data_collection_rule_management = {
+    for resource in module.management_resources.configuration.azurerm_monitor_data_collection_rule :
+    resource.resource_id => resource
     if resource.managed_by_module
   }
 }

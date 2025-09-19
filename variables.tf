@@ -118,6 +118,13 @@ variable "deploy_diagnostics_for_mg" {
 variable "configure_management_resources" {
   type = object({
     settings = optional(object({
+      ama = optional(object({
+        enable_uami                                                         = optional(bool, true)
+        enable_vminsights_dcr                                               = optional(bool, true)
+        enable_change_tracking_dcr                                          = optional(bool, true)
+        enable_mdfc_defender_for_sql_dcr                                    = optional(bool, true)
+        enable_mdfc_defender_for_sql_query_collection_for_security_research = optional(bool, true)
+      }), {})
       log_analytics = optional(object({
         enabled = optional(bool, true)
         config = optional(object({
@@ -157,11 +164,11 @@ variable "configure_management_resources" {
           enable_defender_for_storage                           = optional(bool, true)
         }), {})
       }), {})
-      spoke_networks  = optional(list(
+      spoke_networks = optional(list(
         object({
-          identifier  = optional(string, "")
-          enabled     = optional(bool, true)
-          config      = object({
+          identifier = optional(string, "")
+          enabled    = optional(bool, true)
+          config = object({
             address_space                = list(string)
             location                     = optional(string, "")
             link_to_ddos_protection_plan = optional(bool, false)
@@ -170,32 +177,36 @@ variable "configure_management_resources" {
               object({
                 name                          = string
                 address_prefixes              = list(string)
-                disable_bgp_route_propagation = optional(bool, false)
+                bgp_route_propagation_enabled = optional(bool, true)
                 rules = optional(list(
                   object({
-                    name                        = optional(string, "")
-                    priority                    = optional(number, 100)
-                    direction                   = optional(string, "")
-                    access                      = optional(string, "")
-                    protocol                    = optional(string, "")
-                    source_port_range           = optional(string, "")
-                    destination_port_range      = optional(string, "")
-                    source_address_prefix       = optional(string, "")
-                    destination_address_prefix  = optional(string, "")
+                    name                         = optional(string, "")
+                    priority                     = optional(number, 100)
+                    direction                    = optional(string, "")
+                    access                       = optional(string, "")
+                    protocol                     = optional(string, "")
+                    source_port_range            = optional(string, "")
+                    source_port_ranges           = optional(list(string), [])
+                    destination_port_range       = optional(string, "")
+                    destination_port_ranges      = optional(list(string), [])
+                    source_address_prefix        = optional(string, "")
+                    source_address_prefixes      = optional(list(string), [])
+                    destination_address_prefix   = optional(string, "")
+                    destination_address_prefixes = optional(list(string), [])
                   })
                 ), [])
                 routes = optional(list(
                   object({
-                    name                    = optional(string, "")
-                    address_prefix          = optional(string, "")
-                    next_hop_type           = optional(string, "")
-                    next_hop_in_ip_address  = optional(string, null)
+                    name                   = optional(string, "")
+                    address_prefix         = optional(string, "")
+                    next_hop_type          = optional(string, "")
+                    next_hop_in_ip_address = optional(string, null)
                   })
                 ), [])
                 delegations = optional(list(
                   object({
-                    name                = optional(string, "")
-                    service_delegation  = optional(list(
+                    name = optional(string, "")
+                    service_delegation = optional(list(
                       object({
                         name    = optional(string, "")
                         actions = optional(list(string), [])
@@ -203,23 +214,24 @@ variable "configure_management_resources" {
                     ), [])
                   })
                 ), [])
-                service_endpoints   = optional(list(string), [])
+                service_endpoints = optional(list(string), [])
               })
             ), [])
-            hub_network_id                = optional(string, "")
-            allow_virtual_network_access  = optional(bool, true)
-            allow_forwarded_traffic       = optional(bool, true)
-            use_remote_gateways           = optional(bool, false)
+            hub_network_id               = optional(string, "")
+            vwan_hub_network_id          = optional(string, "")
+            allow_virtual_network_access = optional(bool, true)
+            allow_forwarded_traffic      = optional(bool, true)
+            use_remote_gateways          = optional(bool, false)
           })
         })
       ), [])
-      action_group_name       = optional(string, "")
-      action_group_shortname  = optional(string, "")
-      contact_email           = optional(string, "")
+      action_group_name      = optional(string, "")
+      action_group_shortname = optional(string, "")
+      contact_email          = optional(string, "")
     }), {})
-    location                = optional(string, "")
-    tags                    = optional(any, {})
-    advanced                = optional(any, {})
+    location = optional(string, "")
+    tags     = optional(any, {})
+    advanced = optional(any, {})
   })
   description = "If specified, will customize the \"Management\" landing zone settings and resources."
   default     = {}
@@ -237,16 +249,16 @@ variable "configure_identity_resources" {
       identity = optional(object({
         enabled = optional(bool, true)
         config = optional(object({
-          key_vault      = optional(object({
+          key_vault = optional(object({
             purge_protection_enabled = optional(bool, true)
           }), {})
         }), {})
       }), {})
-      spoke_networks  = optional(list(
+      spoke_networks = optional(list(
         object({
-          identifier  = optional(string, "")
-          enabled     = optional(bool, true)
-          config      = object({
+          identifier = optional(string, "")
+          enabled    = optional(bool, true)
+          config = object({
             address_space                = list(string)
             location                     = optional(string, "")
             link_to_ddos_protection_plan = optional(bool, false)
@@ -255,32 +267,36 @@ variable "configure_identity_resources" {
               object({
                 name                          = string
                 address_prefixes              = list(string)
-                disable_bgp_route_propagation = optional(bool, false)
+                bgp_route_propagation_enabled = optional(bool, true)
                 rules = optional(list(
                   object({
-                    name                        = optional(string, "")
-                    priority                    = optional(number, 100)
-                    direction                   = optional(string, "")
-                    access                      = optional(string, "")
-                    protocol                    = optional(string, "")
-                    source_port_range           = optional(string, "")
-                    destination_port_range      = optional(string, "")
-                    source_address_prefix       = optional(string, "")
-                    destination_address_prefix  = optional(string, "")
+                    name                         = optional(string, "")
+                    priority                     = optional(number, 100)
+                    direction                    = optional(string, "")
+                    access                       = optional(string, "")
+                    protocol                     = optional(string, "")
+                    source_port_range            = optional(string, "")
+                    source_port_ranges           = optional(list(string), [])
+                    destination_port_range       = optional(string, "")
+                    destination_port_ranges      = optional(list(string), [])
+                    source_address_prefix        = optional(string, "")
+                    source_address_prefixes      = optional(list(string), [])
+                    destination_address_prefix   = optional(string, "")
+                    destination_address_prefixes = optional(list(string), [])
                   })
                 ), [])
                 routes = optional(list(
                   object({
-                    name                    = optional(string, "")
-                    address_prefix          = optional(string, "")
-                    next_hop_type           = optional(string, "")
-                    next_hop_in_ip_address  = optional(string, null)
+                    name                   = optional(string, "")
+                    address_prefix         = optional(string, "")
+                    next_hop_type          = optional(string, "")
+                    next_hop_in_ip_address = optional(string, null)
                   })
                 ), [])
                 delegations = optional(list(
                   object({
-                    name                = optional(string, "")
-                    service_delegation  = optional(list(
+                    name = optional(string, "")
+                    service_delegation = optional(list(
                       object({
                         name    = optional(string, "")
                         actions = optional(list(string), [])
@@ -288,126 +304,14 @@ variable "configure_identity_resources" {
                     ), [])
                   })
                 ), [])
-                service_endpoints   = optional(list(string), [])
+                service_endpoints = optional(list(string), [])
               })
             ), [])
-            hub_network_id                = optional(string, "")
-            allow_virtual_network_access  = optional(bool, true)
-            allow_forwarded_traffic       = optional(bool, true)
-            use_remote_gateways           = optional(bool, false)
-          })
-        })
-      ), [])
-    }), {})
-    location = optional(string, "")
-    tags     = optional(any, {})
-    advanced = optional(any, {})
-  })
-  description = "If specified, will customize the \"Identity\" landing zone settings."
-  default     = {}
-}
-
-variable "deploy_security_resources" {
-  type        = bool
-  description = "If set to true, will enable the \"Security\" landing zone settings and add \"Security\" resources into the current Subscription context."
-  default     = false
-}
-
-variable "configure_security_resources" {
-  type = object({
-    settings = optional(object({
-      log_analytics = optional(object({
-        enabled = optional(bool, true)
-        config = optional(object({
-          retention_in_days                                 = optional(number, 30)
-          enable_monitoring_for_vm                          = optional(bool, true)
-          enable_monitoring_for_vmss                        = optional(bool, true)
-          enable_solution_for_agent_health_assessment       = optional(bool, true)
-          enable_solution_for_anti_malware                  = optional(bool, true)
-          enable_solution_for_change_tracking               = optional(bool, true)
-          enable_solution_for_service_map                   = optional(bool, false)
-          enable_solution_for_sql_assessment                = optional(bool, true)
-          enable_solution_for_sql_vulnerability_assessment  = optional(bool, true)
-          enable_solution_for_sql_advanced_threat_detection = optional(bool, true)
-          enable_solution_for_updates                       = optional(bool, true)
-          enable_solution_for_vm_insights                   = optional(bool, true)
-          enable_solution_for_container_insights            = optional(bool, true)
-          enable_sentinel                                   = optional(bool, true)
-        }), {})
-      }), {})
-      security_center = optional(object({
-        enabled = optional(bool, true)
-        config = optional(object({
-          email_security_contact                                = optional(string, "security_contact@replace_me")
-          enable_defender_for_apis                              = optional(bool, true)
-          enable_defender_for_app_services                      = optional(bool, true)
-          enable_defender_for_arm                               = optional(bool, true)
-          enable_defender_for_containers                        = optional(bool, true)
-          enable_defender_for_cosmosdbs                         = optional(bool, true)
-          enable_defender_for_cspm                              = optional(bool, true)
-          enable_defender_for_dns                               = optional(bool, true)
-          enable_defender_for_key_vault                         = optional(bool, true)
-          enable_defender_for_oss_databases                     = optional(bool, true)
-          enable_defender_for_servers                           = optional(bool, true)
-          enable_defender_for_servers_vulnerability_assessments = optional(bool, true)
-          enable_defender_for_sql_servers                       = optional(bool, true)
-          enable_defender_for_sql_server_vms                    = optional(bool, true)
-          enable_defender_for_storage                           = optional(bool, true)
-        }), {})
-      }), {})
-      spoke_networks  = optional(list(
-        object({
-          identifier  = optional(string, "")
-          enabled     = optional(bool, true)
-          config      = object({
-            address_space                = list(string)
-            location                     = optional(string, "")
-            link_to_ddos_protection_plan = optional(bool, false)
-            dns_servers                  = optional(list(string), [])
-            subnets = optional(list(
-              object({
-                name                          = string
-                address_prefixes              = list(string)
-                disable_bgp_route_propagation = optional(bool, false)
-                rules = optional(list(
-                  object({
-                    name                        = optional(string, "")
-                    priority                    = optional(number, 100)
-                    direction                   = optional(string, "")
-                    access                      = optional(string, "")
-                    protocol                    = optional(string, "")
-                    source_port_range           = optional(string, "")
-                    destination_port_range      = optional(string, "")
-                    source_address_prefix       = optional(string, "")
-                    destination_address_prefix  = optional(string, "")
-                  })
-                ), [])
-                routes = optional(list(
-                  object({
-                    name                    = optional(string, "")
-                    address_prefix          = optional(string, "")
-                    next_hop_type           = optional(string, "")
-                    next_hop_in_ip_address  = optional(string, null)
-                  })
-                ), [])
-                delegations = optional(list(
-                  object({
-                    name                = optional(string, "")
-                    service_delegation  = optional(list(
-                      object({
-                        name    = optional(string, "")
-                        actions = optional(list(string), [])
-                      })
-                    ), [])
-                  })
-                ), [])
-                service_endpoints   = optional(list(string), [])
-              })
-            ), [])
-            hub_network_id                = optional(string, "")
-            allow_virtual_network_access  = optional(bool, true)
-            allow_forwarded_traffic       = optional(bool, true)
-            use_remote_gateways           = optional(bool, false)
+            hub_network_id               = optional(string, "")
+            vwan_hub_network_id          = optional(string, "")
+            allow_virtual_network_access = optional(bool, true)
+            allow_forwarded_traffic      = optional(bool, true)
+            use_remote_gateways          = optional(bool, false)
           })
         })
       ), [])
@@ -435,16 +339,16 @@ variable "configure_landingzones_resources" {
       landingzones = optional(object({
         enabled = optional(bool, true)
         config = optional(object({
-          amount                            = optional(number, 500)
-          start_date                        = optional(string, "")
-          end_date                          = optional(string, "")
-          subscription_name                 = optional(string, "")
-          enable_notifications              = optional(bool, true)
-          threshold                         = optional(string, "")
-          operator                          = optional(string, "")
-          action_group_name                 = optional(string, "")
-          action_group_shortname            = optional(string, "")
-          contact_email                     = optional(string, "")
+          amount                 = optional(number, 500)
+          start_date             = optional(string, "")
+          end_date               = optional(string, "")
+          subscription_name      = optional(string, "")
+          enable_notifications   = optional(bool, true)
+          threshold              = optional(string, "")
+          operator               = optional(string, "")
+          action_group_name      = optional(string, "")
+          action_group_shortname = optional(string, "")
+          contact_email          = optional(string, "")
         }), {})
       }), {})
       rbac = optional(list(
@@ -453,11 +357,11 @@ variable "configure_landingzones_resources" {
           principal_id       = optional(string, "")
         })
       ), [])
-      spoke_networks  = optional(list(
+      spoke_networks = optional(list(
         object({
-          identifier  = optional(string, "")
-          enabled     = optional(bool, true)
-          config      = object({
+          identifier = optional(string, "")
+          enabled    = optional(bool, true)
+          config = object({
             address_space                = list(string)
             location                     = optional(string, "")
             link_to_ddos_protection_plan = optional(bool, false)
@@ -466,36 +370,36 @@ variable "configure_landingzones_resources" {
               object({
                 name                          = string
                 address_prefixes              = list(string)
-                disable_bgp_route_propagation = optional(bool, false)
+                bgp_route_propagation_enabled = optional(bool, true)
                 rules = optional(list(
                   object({
-                    name                          = optional(string, "")
-                    priority                      = optional(number, 100)
-                    direction                     = optional(string, "")
-                    access                        = optional(string, "")
-                    protocol                      = optional(string, "")
-                    source_port_range             = optional(string, "")
-                    source_port_ranges            = optional(list(string), [])
-                    destination_port_range        = optional(string, "")
-                    destination_port_ranges       = optional(list(string), [])
-                    source_address_prefix         = optional(string, "")
-                    source_address_prefixes       = optional(list(string), [])
-                    destination_address_prefix    = optional(string, "")
-                    destination_address_prefixes  = optional(list(string), [])
+                    name                         = optional(string, "")
+                    priority                     = optional(number, 100)
+                    direction                    = optional(string, "")
+                    access                       = optional(string, "")
+                    protocol                     = optional(string, "")
+                    source_port_range            = optional(string, "")
+                    source_port_ranges           = optional(list(string), [])
+                    destination_port_range       = optional(string, "")
+                    destination_port_ranges      = optional(list(string), [])
+                    source_address_prefix        = optional(string, "")
+                    source_address_prefixes      = optional(list(string), [])
+                    destination_address_prefix   = optional(string, "")
+                    destination_address_prefixes = optional(list(string), [])
                   })
                 ), [])
                 routes = optional(list(
                   object({
-                    name                    = optional(string, "")
-                    address_prefix          = optional(string, "")
-                    next_hop_type           = optional(string, "")
-                    next_hop_in_ip_address  = optional(string, null)
+                    name                   = optional(string, "")
+                    address_prefix         = optional(string, "")
+                    next_hop_type          = optional(string, "")
+                    next_hop_in_ip_address = optional(string, null)
                   })
                 ), [])
                 delegations = optional(list(
                   object({
-                    name                = optional(string, "")
-                    service_delegation  = optional(list(
+                    name = optional(string, "")
+                    service_delegation = optional(list(
                       object({
                         name    = optional(string, "")
                         actions = optional(list(string), [])
@@ -503,13 +407,13 @@ variable "configure_landingzones_resources" {
                     ), [])
                   })
                 ), [])
-                service_endpoints   = optional(list(string), [])
+                service_endpoints = optional(list(string), [])
               })
             ), [])
-            hub_network_id                = optional(string, "")
-            allow_virtual_network_access  = optional(bool, true)
-            allow_forwarded_traffic       = optional(bool, true)
-            use_remote_gateways           = optional(bool, false)
+            hub_network_id               = optional(string, "")
+            allow_virtual_network_access = optional(bool, true)
+            allow_forwarded_traffic      = optional(bool, true)
+            use_remote_gateways          = optional(bool, false)
           })
         })
       ), [])
@@ -621,73 +525,75 @@ variable "configure_connectivity_resources" {
                   zone_3 = optional(bool, true)
                 }), {})
                 firewall_policy_rule_collection_groups = optional(list(object({
-                  name = string
+                  name     = string
                   priority = number
                   application_rule_collection = optional(list(object({
-                    name = string
+                    name     = string
                     priority = number
-                    action = string
+                    action   = string
                     rule = optional(list(object({
-                      name = string
+                      name        = string
                       description = optional(string, null)
                       protocols = optional(list(object({
                         type = string
                         port = string
                       })), [])
                       http_headers = optional(list(object({
-                        name = string
+                        name  = string
                         value = string
                       })), [])
-                      source_addresses = optional(list(string), [])
-                      source_ip_groups = optional(list(string), [])
+                      source_addresses      = optional(list(string), [])
+                      source_ip_groups      = optional(list(string), [])
                       destination_addresses = optional(list(string), [])
-                      destination_urls = optional(list(string), [])
-                      destination_fqdns = optional(list(string), [])
-		                  destination_fqdn_tags = optional(list(string), [])
-                      terminate_tls = optional(bool, null)
-                      web_categories = optional(list(string), [])
-                    })),[])
-                  })),[])
+                      destination_urls      = optional(list(string), [])
+                      destination_fqdns     = optional(list(string), [])
+                      destination_fqdn_tags = optional(list(string), [])
+                      terminate_tls         = optional(bool, null)
+                      web_categories        = optional(list(string), [])
+                    })), [])
+                  })), [])
                   network_rule_collection = optional(list(object({
-                      name = string
-                      priority = number
-                      action = string
-                      rule = optional(list(object({
-                        name = string
-                        description = optional(string, null)
-                        protocols = list(string)
-                        destination_ports = list(string)
-                        source_addresses = optional(list(string), [])
-                        source_ip_groups = optional(list(string), [])
-                        destination_addresses = optional(list(string), [])
-                        destination_ip_groups = optional(list(string), [])
-                        destination_fqdns    = optional(list(string), [])
-                      })),[])
-                    })),[])
+                    name     = string
+                    priority = number
+                    action   = string
+                    rule = optional(list(object({
+                      name                  = string
+                      description           = optional(string, null)
+                      protocols             = list(string)
+                      destination_ports     = list(string)
+                      source_addresses      = optional(list(string), [])
+                      source_ip_groups      = optional(list(string), [])
+                      destination_addresses = optional(list(string), [])
+                      destination_ip_groups = optional(list(string), [])
+                      destination_fqdns     = optional(list(string), [])
+                    })), [])
+                  })), [])
                   nat_rule_collection = optional(list(object({
-                      name = string
-                      priority = number
-                      action = string
-                      rule = optional(list(object({
-                        name = string
-                        description = optional(string, null)
-                        protocols = list(string)
-                        source_addresses = optional(list(string), [])
-                        source_ip_groups = optional(list(string), [])
-                        destination_address = optional(string,"")
-                        destination_ports  = optional(list(string), [])
-                        translated_address = optional(string, "")
-                        translated_port    = optional(string, "")
-                    })),[])
-                  })),[])
-              })), [])
+                    name     = string
+                    priority = number
+                    action   = string
+                    rule = optional(list(object({
+                      name                = string
+                      description         = optional(string, null)
+                      protocols           = list(string)
+                      source_addresses    = optional(list(string), [])
+                      source_ip_groups    = optional(list(string), [])
+                      destination_address = optional(string, "")
+                      destination_ports   = optional(list(string), [])
+                      translated_address  = optional(string, "")
+                      translated_port     = optional(string, "")
+                    })), [])
+                  })), [])
+                })), [])
               }), {})
             }), {})
             bastion = optional(object({
               enabled = optional(bool, false)
               config = optional(object({
-                address_prefix                = optional(string, "")
-                sku                           = optional(string, "Basic")
+                address_prefix     = optional(string, "")
+                sku                = optional(string, "Basic")
+                ip_connect_enabled = optional(bool, false)
+                tunneling_enabled  = optional(bool, false)
                 availability_zones = optional(object({
                   zone_1 = optional(bool, true)
                   zone_2 = optional(bool, true)
@@ -697,23 +603,23 @@ variable "configure_connectivity_resources" {
             }), {})
             private_dns_resolver = optional(object({
               enabled = optional(bool, false)
-              config  = optional(object({
-               address_prefix_in = optional(string, "")
-               address_prefix_out = optional(string, "")
-               deploy_private_dns_resolver_inbound_endpoint       = optional(bool, false)
-               deploy_private_dns_resolver_outbound_endpoint      = optional(bool, false)
-               deploy_private_dns_resolver_dns_forwarding_ruleset = optional(bool, false)
-               private_dns_resolver_forwarding_rule               = optional(list(object({
-                name = string
-                domain_name = string
-                target_dns_servers = list(object({
-                  ip_address = string
-                  port = string
-                }))
-                enabled = optional(bool, true)
-                metadata = optional(map(string), {})
-               })), [])
-            }), {})
+              config = optional(object({
+                address_prefix_in                                  = optional(string, "")
+                address_prefix_out                                 = optional(string, "")
+                deploy_private_dns_resolver_inbound_endpoint       = optional(bool, false)
+                deploy_private_dns_resolver_outbound_endpoint      = optional(bool, false)
+                deploy_private_dns_resolver_dns_forwarding_ruleset = optional(bool, false)
+                private_dns_resolver_forwarding_rule = optional(list(object({
+                  name        = string
+                  domain_name = string
+                  target_dns_servers = list(object({
+                    ip_address = string
+                    port       = string
+                  }))
+                  enabled  = optional(bool, true)
+                  metadata = optional(map(string), {})
+                })), [])
+              }), {})
             }), {})
             spoke_virtual_network_resource_ids      = optional(list(string), [])
             enable_outbound_virtual_network_peering = optional(bool, false)
@@ -779,75 +685,75 @@ variable "configure_connectivity_resources" {
                   zone_3 = optional(bool, true)
                 }), {})
                 firewall_policy_rule_collection_groups = optional(list(object({
-                  name = string
+                  name     = string
                   priority = number
                   application_rule_collection = optional(list(object({
-                    name = string
+                    name     = string
                     priority = number
-                    action = string
+                    action   = string
                     rule = optional(list(object({
-                      name = string
+                      name        = string
                       description = optional(string, null)
                       protocols = optional(list(object({
                         type = string
                         port = string
                       })), [])
                       http_headers = optional(list(object({
-                        name = string
+                        name  = string
                         value = string
                       })), [])
-                      source_addresses = optional(list(string), [])
-                      source_ip_groups = optional(list(string), [])
+                      source_addresses      = optional(list(string), [])
+                      source_ip_groups      = optional(list(string), [])
                       destination_addresses = optional(list(string), [])
-                      destination_urls = optional(list(string), [])
-                      destination_fqdns = optional(list(string), [])
-		                  destination_fqdn_tags = optional(list(string), [])
-                      terminate_tls = optional(bool, null)
-                      web_categories = optional(list(string), [])
-                    })),[])
-                  })),[])
+                      destination_urls      = optional(list(string), [])
+                      destination_fqdns     = optional(list(string), [])
+                      destination_fqdn_tags = optional(list(string), [])
+                      terminate_tls         = optional(bool, null)
+                      web_categories        = optional(list(string), [])
+                    })), [])
+                  })), [])
                   network_rule_collection = optional(list(object({
-                      name = string
-                      priority = number
-                      action = string
-                      rule = optional(list(object({
-                        name = string
-                        description = optional(string, null)
-                        protocols = list(string)
-                        destination_ports = list(string)
-                        source_addresses = optional(list(string), [])
-                        source_ip_groups = optional(list(string), [])
-                        destination_addresses = optional(list(string), [])
-                        destination_ip_groups = optional(list(string), [])
-                        destination_fqdns    = optional(list(string), [])
-                      })),[])
-                    })),[])
+                    name     = string
+                    priority = number
+                    action   = string
+                    rule = optional(list(object({
+                      name                  = string
+                      description           = optional(string, null)
+                      protocols             = list(string)
+                      destination_ports     = list(string)
+                      source_addresses      = optional(list(string), [])
+                      source_ip_groups      = optional(list(string), [])
+                      destination_addresses = optional(list(string), [])
+                      destination_ip_groups = optional(list(string), [])
+                      destination_fqdns     = optional(list(string), [])
+                    })), [])
+                  })), [])
                   nat_rule_collection = optional(list(object({
-                      name = string
-                      priority = number
-                      action = string
-                      rule = optional(list(object({
-                        name = string
-                        description = optional(string, null)
-                        protocols = list(string)
-                        source_addresses = optional(list(string), [])
-                        source_ip_groups = optional(list(string), [])
-                        destination_address = optional(string, "")
-                        destination_ports  = optional(list(string), [])
-                        translated_address = optional(string, "")
-                        translated_port    = optional(string, "")
-                      })),[])
-                    })),[])
+                    name     = string
+                    priority = number
+                    action   = string
+                    rule = optional(list(object({
+                      name                = string
+                      description         = optional(string, null)
+                      protocols           = list(string)
+                      source_addresses    = optional(list(string), [])
+                      source_ip_groups    = optional(list(string), [])
+                      destination_address = optional(string, "")
+                      destination_ports   = optional(list(string), [])
+                      translated_address  = optional(string, "")
+                      translated_port     = optional(string, "")
+                    })), [])
+                  })), [])
                 })), [])
               }), {})
             }), {})
             virtual_hub_routing_intent = optional(object({
               enabled = optional(bool, false)
               routing_policies = optional(list(
-              object({
-                name                          = optional(string, "")
-                destinations                  = optional(list(string), [])
-                next_hop                      = optional(string, "")
+                object({
+                  name         = optional(string, "")
+                  destinations = optional(list(string), [])
+                  next_hop     = optional(string, "")
                 })
               ), [])
             }), {})

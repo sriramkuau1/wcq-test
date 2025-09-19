@@ -33,16 +33,20 @@ locals {
 # Extract individual custom settings blocks from
 # the custom_settings_by_resource_type variable.
 locals {
-  custom_settings_rsg                       = try(local.custom_settings.azurerm_resource_group["management"], local.empty_map)
-  custom_settings_la_workspace              = try(local.custom_settings.azurerm_log_analytics_workspace["management"], local.empty_map)
-  custom_settings_virtual_network           = try(local.custom_settings.azurerm_virtual_network, local.empty_map)
-  custom_settings_subnets                   = try(local.custom_settings.azurerm_subnet, local.empty_map)
-  custom_settings_network_security_groups   = try(local.custom_settings.azurerm_network_security_group, local.empty_map)
-  custom_settings_route_tables              = try(local.custom_settings.azurerm_route_table, local.empty_map)
-  custom_settings_storage_account           = try(local.custom_settings.azurerm_storage_account["management"], local.empty_map)
-  custom_settings_la_solution               = try(local.custom_settings.azurerm_log_analytics_solution["management"], local.empty_map)
-  custom_settings_aa                        = try(local.custom_settings.azurerm_automation_account["management"], local.empty_map)
-  custom_settings_la_linked_service         = try(local.custom_settings.azurerm_log_analytics_linked_service["management"], local.empty_map)
+  custom_settings_rsg                     = try(local.custom_settings.azurerm_resource_group["management"], local.empty_map)
+  custom_settings_la_workspace            = try(local.custom_settings.azurerm_log_analytics_workspace["management"], local.empty_map)
+  custom_settings_virtual_network         = try(local.custom_settings.azurerm_virtual_network, local.empty_map)
+  custom_settings_subnets                 = try(local.custom_settings.azurerm_subnet, local.empty_map)
+  custom_settings_network_security_groups = try(local.custom_settings.azurerm_network_security_group, local.empty_map)
+  custom_settings_route_tables            = try(local.custom_settings.azurerm_route_table, local.empty_map)
+  custom_settings_storage_account         = try(local.custom_settings.azurerm_storage_account["management"], local.empty_map)
+  custom_settings_la_solution             = try(local.custom_settings.azurerm_log_analytics_solution["management"], local.empty_map)
+  custom_settings_aa                      = try(local.custom_settings.azurerm_automation_account["management"], local.empty_map)
+  custom_settings_la_linked_service       = try(local.custom_settings.azurerm_log_analytics_linked_service["management"], local.empty_map)
+  custom_settings_uami                    = try(local.custom_settings.azurerm_user_assigned_identity["management"], local.empty_map)
+  custom_settings_dcr_vm_insights         = try(local.custom_settings.azurerm_data_collection_rule["vm_insights"], local.empty_map)
+  custom_settings_dcr_change_tracking     = try(local.custom_settings.azurerm_data_collection_rule["change_tracking"], local.empty_map)
+  custom_settings_dcr_defender_sql        = try(local.custom_settings.azurerm_data_collection_rule["defender_sql"], local.empty_map)
 }
 
 # Logic to determine whether specific resources
@@ -86,6 +90,36 @@ locals {
   deploy_defender_for_sql_servers                       = local.settings.security_center.config.enable_defender_for_sql_servers
   deploy_defender_for_sql_server_vms                    = local.settings.security_center.config.enable_defender_for_sql_server_vms
   deploy_defender_for_storage                           = local.settings.security_center.config.enable_defender_for_storage
+  deploy_ama_uami                                       = local.deploy_monitoring_resources && local.settings.ama.enable_uami
+  deploy_vminsights_dcr                                 = local.deploy_monitoring_resources && local.settings.ama.enable_vminsights_dcr
+  deploy_change_tracking_dcr                            = local.deploy_monitoring_resources && local.settings.ama.enable_change_tracking_dcr
+  deploy_mdfc_defender_for_sql_dcr                      = local.deploy_monitoring_resources && local.settings.ama.enable_mdfc_defender_for_sql_dcr
+}
+
+#Logic to determine whether to deploy spoke networks and peering
+locals {
+  spokes_by_location = {
+    for spoke_network in local.settings.spoke_networks :
+    coalesce(spoke_network.config.location, local.location) => spoke_network
+  }
+  deploy_spoke_network = {
+    for location, spoke_network in local.spokes_by_location :
+    location =>
+    local.enabled &&
+    spoke_network.enabled
+  }
+  deploy_spoke_peering = {
+    for location, spoke_network in local.spokes_by_location :
+    location =>
+    local.deploy_network &&
+    spoke_network.config.hub_network_id != local.empty_string
+  }
+  deploy_vwan_hub_connection = {
+    for location, spoke_network in local.spokes_by_location :
+    location =>
+    local.deploy_network &&
+    spoke_network.config.vwan_hub_network_id != local.empty_string
+  }
 }
 
 # Logic to help keep code DRY
@@ -106,6 +140,26 @@ locals {
   spoke_network_locations = distinct(local.all_spoke_network_locations)
 }
 
+# Logic to determine whether specific resources
+# should be created by this module
+# - Resource Groups
+locals {
+  result_when_location_missing = {
+    enabled = false
+  }
+  deploy_network_resource_group = {
+    for location in local.spoke_network_locations :
+    "network_${location}" =>
+    local.enabled &&
+    lookup(local.spokes_by_location, location, local.result_when_location_missing).enabled
+  }
+  deploy_management_resource_group = {
+    management = local.enabled
+    alerts     = local.enabled
+  }
+  deploy_resource_groups = merge(local.deploy_network_resource_group, local.deploy_management_resource_group)
+}
+
 # Configuration settings for resource type:
 #  - azurerm_resource_group
 locals {
@@ -119,7 +173,7 @@ locals {
       local.existing_resource_group_name,
       "${local.resource_type_names.resource_group}-${lookup(local.custom_azure_backup_geo_codes, local.location, local.location)}-${local.resource_prefix}-management${local.resource_suffix}"
     )
-    alerts     = "alertsRG"
+    alerts = "alertsRG"
   }
   resource_group_name = merge(local.network_resource_group_name, local.management_resource_group_name)
   resource_group_resource_id = {
@@ -131,12 +185,13 @@ locals {
     for scope, name in local.resource_group_name :
     scope => {
       # Resource logic attributes
-      resource_id = "/subscriptions/${local.subscription_id}/resourceGroups/${name}"
-      scope       = scope
+      resource_id       = "/subscriptions/${local.subscription_id}/resourceGroups/${name}"
+      scope             = scope
+      managed_by_module = local.deploy_resource_groups[scope]
       # Resource definition attributes
-      name        = name
-      location    = length(split("_", scope)) > 1 ? split("_", scope)[1] : local.location
-      tags        = local.tags
+      name     = name
+      location = length(split("_", scope)) > 1 ? split("_", scope)[1] : local.location
+      tags     = try(local.custom_settings_rsg[scope].tags, local.tags)
     }
   }
 }
@@ -148,7 +203,7 @@ locals {
     for identifier, spoke_network in local.spoke_networks_by_identifier :
     identifier =>
     try(local.custom_settings.azurerm_virtual_network[identifier].name,
-    "${local.resource_type_names.virtual_network}-${lookup(local.custom_azure_backup_geo_codes, spoke_network.config.location, spoke_network.config.location)}-${local.resource_prefix}-${replace(spoke_network.config.address_space[0],"/","_")}${local.resource_suffix}")
+    "${local.resource_type_names.virtual_network}-${lookup(local.custom_azure_backup_geo_codes, spoke_network.config.location, spoke_network.config.location)}-${local.resource_prefix}-${replace(spoke_network.config.address_space[0], "/", "_")}${local.resource_suffix}")
   }
   virtual_network_resource_id_prefix = {
     for location in local.spoke_network_locations :
@@ -164,7 +219,8 @@ locals {
     for identifier, spoke_network in local.spoke_networks_by_identifier :
     {
       # Resource logic attributes
-      resource_id = local.virtual_network_resource_id[identifier]
+      resource_id       = local.virtual_network_resource_id[identifier]
+      managed_by_module = local.deploy_spoke_network[spoke_network.config.location]
       # Resource definition attributes
       name                 = local.virtual_network_name[identifier]
       resource_group_name  = local.resource_group_name["network_${spoke_network.config.location}"]
@@ -200,18 +256,19 @@ locals {
           subnet,
           {
             # Resource logic attributes
-            resource_id                   = "${local.virtual_network_resource_id[identifier]}/subnets/${subnet.name}"
-            location                      = spoke_network.config.location
-            vnet_identifier               = identifier
-            network_security_group_id     = "${local.network_security_group_resource_id_prefix[spoke_network.config.location]}/${try(local.custom_settings_network_security_groups[identifier][subnet.name].name, "${local.resource_type_names.network_security_group}-${lookup(local.custom_azure_backup_geo_codes, spoke_network.config.location, spoke_network.config.location)}-${local.resource_prefix}-${subnet.name}${local.resource_suffix}")}"
-            route_table_id                = "${local.route_table_resource_id_prefix[spoke_network.config.location]}/${try(local.custom_settings_route_tables[identifier][subnet.name].name,"${local.resource_type_names.route_table}-${lookup(local.custom_azure_backup_geo_codes, spoke_network.config.location, spoke_network.config.location)}-${local.resource_prefix}-${subnet.name}${local.resource_suffix}")}"
-            routes                        = coalesce(subnet.routes, local.empty_list)
-            rules                         = coalesce(subnet.rules, local.empty_list)
+            resource_id               = "${local.virtual_network_resource_id[identifier]}/subnets/${subnet.name}"
+            location                  = spoke_network.config.location
+            vnet_identifier           = identifier
+            network_security_group_id = "${local.network_security_group_resource_id_prefix[spoke_network.config.location]}/${try(local.custom_settings_network_security_groups[identifier][subnet.name].name, "${local.resource_type_names.network_security_group}-${lookup(local.custom_azure_backup_geo_codes, spoke_network.config.location, spoke_network.config.location)}-${local.resource_prefix}-${subnet.name}${local.resource_suffix}")}"
+            route_table_id            = "${local.route_table_resource_id_prefix[spoke_network.config.location]}/${try(local.custom_settings_route_tables[identifier][subnet.name].name, "${local.resource_type_names.route_table}-${lookup(local.custom_azure_backup_geo_codes, spoke_network.config.location, spoke_network.config.location)}-${local.resource_prefix}-${subnet.name}${local.resource_suffix}")}"
+            routes                    = coalesce(subnet.routes, local.empty_list)
+            rules                     = coalesce(subnet.rules, local.empty_list)
+            managed_by_module         = local.deploy_spoke_network[spoke_network.config.location]
             # Resource definition attributes
             name                                          = subnet.name
             resource_group_name                           = local.resource_group_name["network_${spoke_network.config.location}"]
             virtual_network_name                          = local.virtual_network_name[identifier]
-            private_endpoint_network_policies_enabled     = try(local.custom_settings_subnets[identifier][subnet.name].private_endpoint_network_policies_enabled, false)
+            private_endpoint_network_policies             = try(local.custom_settings_subnets[identifier][subnet.name].private_endpoint_network_policies, "Disabled")
             private_link_service_network_policies_enabled = try(local.custom_settings_subnets[identifier][subnet.name].private_link_service_network_policies_enabled, false)
             service_endpoints                             = try(local.custom_settings_subnets[identifier][subnet.name].service_endpoints, subnet.service_endpoints)
             service_endpoint_policy_ids                   = try(local.custom_settings_subnets[identifier][subnet.name].service_endpoint_policy_ids, null)
@@ -233,10 +290,11 @@ locals {
   azurerm_network_security_group = [
     for subnet in local.azurerm_subnet : {
       # Resource logic attributes
-      resource_id   = subnet.network_security_group_id
-      subnet_id     = subnet.resource_id
+      resource_id       = subnet.network_security_group_id
+      subnet_id         = subnet.resource_id
+      managed_by_module = local.deploy_spoke_network[subnet.location]
       # Resource definition attributes
-      name                = try(local.custom_settings_network_security_groups[subnet.vnet_identifier][subnet.name].name, "${try(split("/", subnet.network_security_group_id)[8],"")}")
+      name                = try(local.custom_settings_network_security_groups[subnet.vnet_identifier][subnet.name].name, try(split("/", subnet.network_security_group_id)[8], ""))
       resource_group_name = try(local.custom_settings_network_security_groups[subnet.vnet_identifier][subnet.name].resource_group_name, subnet.resource_group_name)
       location            = try(local.custom_settings_network_security_groups[subnet.vnet_identifier][subnet.name].location, subnet.location)
       tags                = try(local.custom_settings_network_security_groups[subnet.vnet_identifier][subnet.name].tags, local.tags)
@@ -251,14 +309,15 @@ locals {
   azurerm_route_table = [
     for subnet in local.azurerm_subnet : {
       # Resource logic attributes
-      resource_id   = subnet.route_table_id
-      subnet_id     = subnet.resource_id
+      resource_id       = subnet.route_table_id
+      subnet_id         = subnet.resource_id
+      managed_by_module = length(subnet.routes) > 0 ? local.deploy_spoke_network[subnet.location] : false
       # Resource definition attributes
-      name                          = try(local.custom_settings_route_tables[subnet.vnet_identifier][subnet.name].name, "${try(split("/", subnet.route_table_id)[8],"")}")
+      name                          = try(local.custom_settings_route_tables[subnet.vnet_identifier][subnet.name].name, try(split("/", subnet.route_table_id)[8], ""))
       resource_group_name           = try(local.custom_settings_route_tables[subnet.vnet_identifier][subnet.name].resource_group_name, subnet.resource_group_name)
       location                      = try(local.custom_settings_route_tables[subnet.vnet_identifier][subnet.name].location, subnet.location)
       tags                          = try(local.custom_settings_route_tables[subnet.vnet_identifier][subnet.name].tags, local.tags)
-      disable_bgp_route_propagation = try(local.custom_settings_route_tables[subnet.vnet_identifier][subnet.name].disable_bgp_route_propagation, subnet.disable_bgp_route_propagation)
+      bgp_route_propagation_enabled = try(local.custom_settings_route_tables[subnet.vnet_identifier][subnet.name].bgp_route_propagation_enabled, subnet.bgp_route_propagation_enabled)
       route                         = try(local.custom_settings_route_tables[subnet.vnet_identifier][subnet.name].route, subnet.routes)
     }
   ]
@@ -270,8 +329,9 @@ locals {
   azurerm_subnet_network_security_group_association = [
     for subnet in local.azurerm_subnet : {
       # Resource logic attributes
-      network_security_group_id   = subnet.network_security_group_id
-      subnet_id                   = subnet.resource_id
+      network_security_group_id = subnet.network_security_group_id
+      subnet_id                 = subnet.resource_id
+      managed_by_module         = local.deploy_spoke_network[subnet.location]
     }
   ]
 }
@@ -282,8 +342,9 @@ locals {
   azurerm_subnet_route_table_association = [
     for subnet in local.azurerm_subnet : {
       # Resource logic attributes
-      route_table_id  = subnet.route_table_id
-      subnet_id       = subnet.resource_id
+      route_table_id    = subnet.route_table_id
+      subnet_id         = subnet.resource_id
+      managed_by_module = length(subnet.routes) > 0 ? local.deploy_spoke_network[subnet.location] : false
     }
   ]
 }
@@ -295,7 +356,7 @@ locals {
     for identifier, spoke_network in local.spoke_networks_by_identifier :
     identifier =>
     try(local.custom_settings.azurerm_virtual_network_peering[identifier].name,
-    "peering-${try(split("/", spoke_network.config.hub_network_id)[2],"")}")
+    "peering-${try(split("/", spoke_network.config.hub_network_id)[2], "")}")
   }
   virtual_network_peering_resource_id_prefix = {
     for identifier, vnet_prefix in local.virtual_network_resource_id :
@@ -311,17 +372,57 @@ locals {
     for identifier, spoke_network in local.spoke_networks_by_identifier :
     {
       # Resource logic attributes
-      resource_id = local.virtual_network_peering_resource_id[identifier]
+      resource_id       = local.virtual_network_peering_resource_id[identifier]
+      managed_by_module = local.deploy_spoke_peering[spoke_network.config.location]
       # Resource definition attributes
-      name                        = local.virtual_network_peering_name[identifier]
-      virtual_network_name        = local.virtual_network_name[identifier]
-      resource_group_name         = local.resource_group_name["network_${spoke_network.config.location}"]
-      remote_virtual_network_id   = try(spoke_network.config.hub_network_id, "")
+      name                      = local.virtual_network_peering_name[identifier]
+      virtual_network_name      = local.virtual_network_name[identifier]
+      resource_group_name       = local.resource_group_name["network_${spoke_network.config.location}"]
+      remote_virtual_network_id = try(spoke_network.config.hub_network_id, "")
       # Optional definition attributes
-      allow_virtual_network_access  = try(spoke_network.config.allow_virtual_network_access, true)
-      allow_forwarded_traffic       = try(spoke_network.config.allow_forwarded_traffic, true)
-      allow_gateway_transit         = false
-      use_remote_gateways           = try(spoke_network.config.use_remote_gateways, false)
+      allow_virtual_network_access = try(spoke_network.config.allow_virtual_network_access, true)
+      allow_forwarded_traffic      = try(spoke_network.config.allow_forwarded_traffic, true)
+      allow_gateway_transit        = false
+      use_remote_gateways          = try(spoke_network.config.use_remote_gateways, false)
+    }
+  ]
+}
+
+# Configuration settings for resource type:
+#  - azurerm_virtual_hub_connection
+locals {
+  virtual_hub_connection_name = {
+    for identifier, spoke_network in local.spoke_networks_by_identifier :
+    identifier =>
+    try(local.custom_settings.virtual_hub_connection_name[identifier].name,
+    "peering-${uuidv5("url", local.virtual_network_resource_id[identifier])}")
+  }
+  virtual_hub_connection_resource_id = {
+    for identifier, spoke_network in local.spoke_networks_by_identifier :
+    identifier =>
+    "${spoke_network.config.vwan_hub_network_id}/hubVirtualNetworkConnections/${local.virtual_hub_connection_name[identifier]}"
+  }
+  azurerm_virtual_hub_connection = [
+    for identifier, spoke_network in local.spoke_networks_by_identifier :
+    {
+      # Resource logic attributes
+      resource_id       = local.virtual_hub_connection_resource_id[identifier]
+      managed_by_module = local.deploy_vwan_hub_connection[spoke_network.config.location]
+      # Resource definition attributes
+      name                      = local.virtual_hub_connection_name[identifier]
+      virtual_hub_id            = spoke_network.config.vwan_hub_network_id
+      remote_virtual_network_id = local.virtual_network_resource_id[identifier]
+      # Optional definition attributes
+      internet_security_enabled = try(spoke_network.config.internet_security_enabled, true)
+      # routing                   = local.empty_list
+      routing = [{
+        propagated_route_table = [{
+          labels          = ["none"]
+          route_table_ids = ["${spoke_network.config.vwan_hub_network_id}/hubRouteTables/noneRouteTable"]
+        }]
+        static_vnet_route         = []
+        associated_route_table_id = "${spoke_network.config.vwan_hub_network_id}/hubRouteTables/defaultRouteTable"
+      }]
     }
   ]
 }
@@ -331,12 +432,12 @@ locals {
 locals {
   storage_account_resource_id = "${local.resource_group_resource_id.management}/providers/Microsoft.Storage/storageAccounts/${local.azurerm_storage_account.name}"
   azurerm_storage_account = {
-    name                               = lookup(local.custom_settings_storage_account, "name", "${local.resource_type_names.storage_account}${local.resource_type_names.organization}${lookup(local.custom_azure_backup_geo_codes, local.location, local.location)}platmgmt01${local.resource_suffix}")
-    resource_group_name                = lookup(local.custom_settings_storage_account, "resource_group_name", local.resource_group_name.management)
-    location                           = lookup(local.custom_settings_storage_account, "location", local.location)
-    account_tier                       = lookup(local.custom_settings_storage_account, "account_tier", "Standard")
-    account_replication_type           = lookup(local.custom_settings_storage_account, "account_replication_type", "LRS")
-    tags                               = lookup(local.custom_settings_storage_account, "tags", local.tags)
+    name                     = lookup(local.custom_settings_storage_account, "name", "${local.resource_type_names.storage_account}${local.resource_type_names.organization}${lookup(local.custom_azure_backup_geo_codes, local.location, local.location)}platmgmt01${local.resource_suffix}")
+    resource_group_name      = lookup(local.custom_settings_storage_account, "resource_group_name", local.resource_group_name.management)
+    location                 = lookup(local.custom_settings_storage_account, "location", local.location)
+    account_tier             = lookup(local.custom_settings_storage_account, "account_tier", "Standard")
+    account_replication_type = lookup(local.custom_settings_storage_account, "account_replication_type", "LRS")
+    tags                     = lookup(local.custom_settings_storage_account, "tags", local.tags)
   }
 }
 
@@ -388,6 +489,414 @@ locals {
   ]
 }
 
+# Configuration for the user assigned managed identity
+locals {
+  user_assigned_managed_identity_resource_id = "${local.resource_group_resource_id.management}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${local.user_assigned_managed_identity.name}"
+  user_assigned_managed_identity = {
+    name                = lookup(local.custom_settings_uami, "name", "${local.resource_type_names.user_assigned_managed_identity}-${lookup(local.custom_azure_backup_geo_codes, local.location, local.location)}-${local.resource_prefix}-01${local.resource_suffix}")
+    resource_group_name = lookup(local.custom_settings_uami, "resource_group_name", local.resource_group_name.management)
+    location            = lookup(local.custom_settings_uami, "location", local.location)
+    tags                = lookup(local.custom_settings_uami, "tags", local.tags)
+  }
+}
+
+# Configuration for the change tracking DCR
+locals {
+  azure_monitor_data_collection_rule_change_tracking_resource_id = "${local.resource_group_resource_id.management}/providers/Microsoft.Insights/dataCollectionRules/${local.azure_monitor_data_collection_rule_change_tracking.name}"
+  azure_monitor_data_collection_rule_change_tracking = {
+    name                      = lookup(local.custom_settings_dcr_change_tracking, "name", "${local.resource_type_names.data_collection_rule_change_tracking}-${lookup(local.custom_azure_backup_geo_codes, local.location, local.location)}-${local.resource_prefix}-01${local.resource_suffix}")
+    type                      = "Microsoft.Insights/dataCollectionRules@2021-04-01"
+    parent_id                 = local.resource_group_resource_id.management
+    location                  = lookup(local.custom_settings_dcr_change_tracking, "location", local.location)
+    schema_validation_enabled = true
+    tags                      = lookup(local.custom_settings_dcr_change_tracking, "tags", local.tags)
+    body = {
+      properties = {
+        description = "Data collection rule for CT"
+        dataSources = {
+          extensions = [
+            {
+              streams = [
+                "Microsoft-ConfigurationChange",
+                "Microsoft-ConfigurationChangeV2",
+                "Microsoft-ConfigurationData"
+              ]
+              extensionName = "ChangeTracking-Windows"
+              extensionSettings = {
+                enableFiles     = true,
+                enableSoftware  = true,
+                enableRegistry  = true,
+                enableServices  = true,
+                enableInventory = true,
+                registrySettings = {
+                  registryCollectionFrequency = 3600
+                  registryInfo = [
+                    {
+                      name        = "Registry_1",
+                      groupTag    = "Recommended",
+                      enabled     = false,
+                      recurse     = true,
+                      description = "",
+                      keyName     = "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\CurrentVersion\\Group Policy\\Scripts\\Startup",
+                      valueName   = ""
+                    },
+                    {
+                      name        = "Registry_2",
+                      groupTag    = "Recommended",
+                      enabled     = false,
+                      recurse     = true,
+                      description = "",
+                      keyName     = "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\CurrentVersion\\Group Policy\\Scripts\\Shutdown",
+                      valueName   = ""
+                    },
+                    {
+                      name        = "Registry_3",
+                      groupTag    = "Recommended",
+                      enabled     = false,
+                      recurse     = true,
+                      description = "",
+                      keyName     = "HKEY_LOCAL_MACHINE\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Run",
+                      valueName   = ""
+                    },
+                    {
+                      name        = "Registry_4",
+                      groupTag    = "Recommended",
+                      enabled     = false,
+                      recurse     = true,
+                      description = "",
+                      keyName     = "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Active Setup\\Installed Components",
+                      valueName   = ""
+                    },
+                    {
+                      name        = "Registry_5",
+                      groupTag    = "Recommended",
+                      enabled     = false,
+                      recurse     = true,
+                      description = "",
+                      keyName     = "HKEY_LOCAL_MACHINE\\Software\\Classes\\Directory\\ShellEx\\ContextMenuHandlers",
+                      valueName   = ""
+                    },
+                    {
+                      name        = "Registry_6",
+                      groupTag    = "Recommended",
+                      enabled     = false,
+                      recurse     = true,
+                      description = "",
+                      keyName     = "HKEY_LOCAL_MACHINE\\Software\\Classes\\Directory\\Background\\ShellEx\\ContextMenuHandlers",
+                      valueName   = ""
+                    },
+                    {
+                      name        = "Registry_7",
+                      groupTag    = "Recommended",
+                      enabled     = false,
+                      recurse     = true,
+                      description = "",
+                      keyName     = "HKEY_LOCAL_MACHINE\\Software\\Classes\\Directory\\Shellex\\CopyHookHandlers",
+                      valueName   = ""
+                    },
+                    {
+                      name        = "Registry_8",
+                      groupTag    = "Recommended",
+                      enabled     = false,
+                      recurse     = true,
+                      description = "",
+                      keyName     = "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\ShellIconOverlayIdentifiers",
+                      valueName   = ""
+                    },
+                    {
+                      name        = "Registry_9",
+                      groupTag    = "Recommended",
+                      enabled     = false,
+                      recurse     = true,
+                      description = "",
+                      keyName     = "HKEY_LOCAL_MACHINE\\Software\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Explorer\\ShellIconOverlayIdentifiers",
+                      valueName   = ""
+                    },
+                    {
+                      name        = "Registry_10",
+                      groupTag    = "Recommended",
+                      enabled     = false,
+                      recurse     = true,
+                      description = "",
+                      keyName     = "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Browser Helper Objects",
+                      valueName   = ""
+                    },
+                    {
+                      name        = "Registry_11",
+                      groupTag    = "Recommended",
+                      enabled     = false,
+                      recurse     = true,
+                      description = "",
+                      keyName     = "HKEY_LOCAL_MACHINE\\Software\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Browser Helper Objects",
+                      valueName   = ""
+                    },
+                    {
+                      name        = "Registry_12",
+                      groupTag    = "Recommended",
+                      enabled     = false,
+                      recurse     = true,
+                      description = "",
+                      keyName     = "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Internet Explorer\\Extensions",
+                      valueName   = ""
+                    },
+                    {
+                      name        = "Registry_13",
+                      groupTag    = "Recommended",
+                      enabled     = false,
+                      recurse     = true,
+                      description = "",
+                      keyName     = "HKEY_LOCAL_MACHINE\\Software\\Wow6432Node\\Microsoft\\Internet Explorer\\Extensions",
+                      valueName   = ""
+                    },
+                    {
+                      name        = "Registry_14",
+                      groupTag    = "Recommended",
+                      enabled     = false,
+                      recurse     = true,
+                      description = "",
+                      keyName     = "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Drivers32",
+                      valueName   = ""
+                    },
+                    {
+                      name        = "Registry_15",
+                      groupTag    = "Recommended",
+                      enabled     = false,
+                      recurse     = true,
+                      description = "",
+                      keyName     = "HKEY_LOCAL_MACHINE\\Software\\Wow6432Node\\Microsoft\\Windows NT\\CurrentVersion\\Drivers32",
+                      valueName   = ""
+                    },
+                    {
+                      name        = "Registry_16",
+                      groupTag    = "Recommended",
+                      enabled     = false,
+                      recurse     = true,
+                      description = "",
+                      keyName     = "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Session Manager\\KnownDlls",
+                      valueName   = ""
+                    },
+                    {
+                      name        = "Registry_17",
+                      groupTag    = "Recommended",
+                      enabled     = false,
+                      recurse     = true,
+                      description = "",
+                      keyName     = "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\\Notify",
+                      valueName   = ""
+                    }
+                  ]
+                }
+                fileSettings = {
+                  fileCollectionFrequency = 2700,
+                },
+                softwareSettings = {
+                  softwareCollectionFrequency = 1800
+                },
+                inventorySettings = {
+                  inventoryCollectionFrequency = 36000
+                },
+                servicesSettings = {
+                  serviceCollectionFrequency = 1800
+                }
+              }
+              name = "CTDataSource-Windows"
+            },
+            {
+              streams = [
+                "Microsoft-ConfigurationChange",
+                "Microsoft-ConfigurationChangeV2",
+                "Microsoft-ConfigurationData"
+              ]
+              extensionName = "ChangeTracking-Linux"
+              extensionSettings = {
+                enableFiles     = true,
+                enableSoftware  = true,
+                enableRegistry  = false,
+                enableServices  = true,
+                enableInventory = true,
+                fileSettings = {
+                  fileCollectionFrequency = 900,
+                  fileInfo = [
+                    {
+                      name                  = "ChangeTrackingLinuxPath_default",
+                      enabled               = true,
+                      destinationPath       = "/etc/.*.conf",
+                      useSudo               = true,
+                      recurse               = true,
+                      maxContentsReturnable = 5000000,
+                      pathType              = "File",
+                      type                  = "File",
+                      links                 = "Follow",
+                      maxOutputSize         = 500000,
+                      groupTag              = "Recommended"
+                    }
+                  ]
+                },
+                softwareSettings = {
+                  softwareCollectionFrequency = 300
+                },
+                inventorySettings = {
+                  inventoryCollectionFrequency = 36000
+                },
+                servicesSettings = {
+                  serviceCollectionFrequency = 300
+                }
+              }
+              name = "CTDataSource-Linux"
+            }
+          ]
+        }
+        destinations = {
+          logAnalytics = [
+            {
+              name                = "Microsoft-CT-Dest"
+              workspaceResourceId = local.log_analytics_workspace_resource_id
+            }
+          ]
+        }
+        dataFlows = [
+          {
+            streams = [
+              "Microsoft-ConfigurationChange",
+              "Microsoft-ConfigurationChangeV2",
+              "Microsoft-ConfigurationData"
+            ]
+            destinations = ["Microsoft-CT-Dest"]
+          }
+        ]
+      }
+    }
+  }
+}
+
+# Configuration for the change tracking DCR
+locals {
+  azure_monitor_data_collection_rule_defender_sql_resource_id = "${local.resource_group_resource_id.management}/providers/Microsoft.Insights/dataCollectionRules/${local.azure_monitor_data_collection_rule_defender_sql.name}"
+  azure_monitor_data_collection_rule_defender_sql = {
+    name                      = lookup(local.custom_settings_dcr_defender_sql, "name", "${local.resource_type_names.data_collection_rule_defender_sql}-${lookup(local.custom_azure_backup_geo_codes, local.location, local.location)}-${local.resource_prefix}-01${local.resource_suffix}")
+    parent_id                 = local.resource_group_resource_id.management
+    type                      = "Microsoft.Insights/dataCollectionRules@2021-04-01"
+    location                  = lookup(local.custom_settings_dcr_defender_sql, "location", local.location)
+    schema_validation_enabled = true
+    tags                      = lookup(local.custom_settings_dcr_defender_sql, "tags", local.tags)
+    body = {
+      properties = {
+        description = "Data collection rule for Defender for SQL.",
+        dataSources = {
+          extensions = [
+            {
+              extensionName = "MicrosoftDefenderForSQL",
+              name          = "MicrosoftDefenderForSQL",
+              streams = [
+                "Microsoft-DefenderForSqlAlerts",
+                "Microsoft-DefenderForSqlLogins",
+                "Microsoft-DefenderForSqlTelemetry",
+                "Microsoft-DefenderForSqlScanEvents",
+                "Microsoft-DefenderForSqlScanResults",
+              ],
+              extensionSettings = {
+                enableCollectionOfSqlQueriesForSecurityResearch = local.settings.ama.enable_mdfc_defender_for_sql_query_collection_for_security_research
+              }
+            }
+          ]
+        },
+        destinations = {
+          logAnalytics = [
+            {
+              workspaceResourceId = local.log_analytics_workspace_resource_id,
+              name                = "LogAnalyticsDest"
+            }
+          ]
+        },
+        dataFlows = [
+          {
+            streams = [
+              "Microsoft-DefenderForSqlAlerts",
+              "Microsoft-DefenderForSqlLogins",
+              "Microsoft-DefenderForSqlTelemetry",
+              "Microsoft-DefenderForSqlScanEvents",
+              "Microsoft-DefenderForSqlScanResults",
+            ],
+            destinations = [
+              "LogAnalyticsDest"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
+
+# Configuration for the VM Insights DCR
+locals {
+  azure_monitor_data_collection_rule_vm_insights_resource_id = "${local.resource_group_resource_id.management}/providers/Microsoft.Insights/dataCollectionRules/${local.azure_monitor_data_collection_rule_vm_insights.name}"
+  azure_monitor_data_collection_rule_vm_insights = {
+    name                      = lookup(local.custom_settings_dcr_vm_insights, "name", "${local.resource_type_names.data_collection_rule_vm_insights}-${lookup(local.custom_azure_backup_geo_codes, local.location, local.location)}-${local.resource_prefix}-01${local.resource_suffix}")
+    parent_id                 = local.resource_group_resource_id.management
+    type                      = "Microsoft.Insights/dataCollectionRules@2021-04-01"
+    location                  = lookup(local.custom_settings_dcr_vm_insights, "location", local.location)
+    tags                      = lookup(local.custom_settings_dcr_vm_insights, "tags", local.tags)
+    schema_validation_enabled = false
+    body = {
+      properties = {
+        description = "Data collection rule for VM Insights.",
+        dataSources = {
+          performanceCounters = [
+            {
+              name = "VMInsightsPerfCounters",
+              streams = [
+                "Microsoft-InsightsMetrics"
+              ],
+              scheduledTransferPeriod    = "PT1M",
+              samplingFrequencyInSeconds = 60,
+              counterSpecifiers = [
+                "\\VmInsights\\DetailedMetrics"
+              ]
+            }
+          ],
+          extensions = [
+            {
+              streams = [
+                "Microsoft-ServiceMap"
+              ],
+              extensionName     = "DependencyAgent",
+              extensionSettings = {},
+              name              = "DependencyAgentDataSource"
+            }
+          ]
+        },
+        destinations = {
+          logAnalytics = [
+            {
+              workspaceResourceId = local.log_analytics_workspace_resource_id,
+              name                = "VMInsightsPerf-Logs-Dest"
+            }
+          ]
+        },
+        dataFlows = [
+          {
+            streams = [
+              "Microsoft-InsightsMetrics"
+            ],
+            destinations = [
+              "VMInsightsPerf-Logs-Dest"
+            ]
+          },
+          {
+            streams = [
+              "Microsoft-ServiceMap"
+            ],
+            destinations = [
+              "VMInsightsPerf-Logs-Dest"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
+
+
 # Configuration settings for resource type:
 #  - azurerm_automation_account
 locals {
@@ -410,9 +919,9 @@ locals {
     resource_group_name           = lookup(local.custom_settings_aa, "resource_group_name", local.resource_group_name.management)
     location                      = lookup(local.custom_settings_aa, "location", local.automation_account_location)
     sku_name                      = lookup(local.custom_settings_aa, "sku_name", "Basic")
-    public_network_access_enabled = lookup(local.custom_settings_aa, "public_network_access_enabled", true)
+    public_network_access_enabled = lookup(local.custom_settings_aa, "public_network_access_enabled", false)
     local_authentication_enabled  = lookup(local.custom_settings_aa, "local_authentication_enabled", true)
-    identity                      = lookup(local.custom_settings_aa, "identity", local.empty_list)
+    identity                      = lookup(local.custom_settings_aa, "identity", [{ type = "SystemAssigned" }])
     encryption                    = lookup(local.custom_settings_aa, "encryption", local.empty_list)
     tags                          = lookup(local.custom_settings_aa, "tags", local.tags)
   }
@@ -430,7 +939,7 @@ locals {
   }
 }
 
-locals{
+locals {
   log_analytics_linked_storage_account_resource_id = "${local.log_analytics_workspace_resource_id}/linkedStorageAccounts/CustomLogs"
   azurerm_log_analytics_linked_storage_account = {
     data_source_type      = "CustomLogs"
@@ -446,12 +955,12 @@ locals {
   azurerm_monitor_action_group = {
 
     resource_id            = "${local.resource_group_resource_id["management"]}/providers/Microsoft.Insights/actiongroups/${local.settings.action_group_name}"
-    name                   = "${local.settings.action_group_name}"
+    name                   = local.settings.action_group_name
     resource_group_name    = local.resource_group_name["management"]
     action_group_shortname = local.settings.action_group_shortname
     tags                   = local.tags
-    email_receiver         = {
-      name = "Default"
+    email_receiver = {
+      name          = "Default"
       email_address = local.settings.contact_email
     }
   }
@@ -498,7 +1007,7 @@ locals {
         Deploy-Flow-Logs = {
           storageId = local.storage_account_resource_id
         }
-        Deploy-ServiceHealth ={
+        Deploy-ServiceHealth = {
           actionGroupId = local.azurerm_monitor_action_group.resource_id
         }
       }
@@ -541,15 +1050,16 @@ locals {
 # Template file variable outputs
 locals {
   template_file_variables = {
-    log_analytics_workspace_resource_id = local.log_analytics_workspace_resource_id
-    log_analytics_workspace_name        = local.azurerm_log_analytics_workspace.name
-    log_analytics_workspace_location    = local.azurerm_log_analytics_workspace.location
-    automation_account_resource_id      = local.automation_account_resource_id
-    automation_account_name             = local.azurerm_automation_account.name
-    automation_account_location         = local.azurerm_automation_account.location
-    management_location                 = local.location
-    management_resource_group_name      = local.resource_group_name.management
-    data_retention                      = tostring(local.azurerm_log_analytics_workspace.retention_in_days)
+    log_analytics_workspace_resource_id        = local.log_analytics_workspace_resource_id
+    log_analytics_workspace_name               = local.azurerm_log_analytics_workspace.name
+    log_analytics_workspace_location           = local.azurerm_log_analytics_workspace.location
+    automation_account_resource_id             = local.automation_account_resource_id
+    automation_account_name                    = local.azurerm_automation_account.name
+    automation_account_location                = local.azurerm_automation_account.location
+    management_location                        = local.location
+    management_resource_group_name             = local.resource_group_name.management
+    data_retention                             = tostring(local.azurerm_log_analytics_workspace.retention_in_days)
+    user_assigned_managed_identity_resource_id = local.user_assigned_managed_identity_resource_id
   }
 }
 
@@ -568,7 +1078,8 @@ locals {
           key != "resource_id" &&
           key != "managed_by_module"
         }
-        managed_by_module = local.deploy_resource_group
+        scope             = resource.scope
+        managed_by_module = resource.managed_by_module
       }
     ]
     azurerm_virtual_network = [
@@ -583,7 +1094,7 @@ locals {
           key != "resource_id" &&
           key != "managed_by_module"
         }
-        managed_by_module = local.deploy_network
+        managed_by_module = resource.managed_by_module
       }
     ]
     azurerm_subnet = [
@@ -604,7 +1115,7 @@ locals {
           key != "routes" &&
           key != "rules"
         }
-        managed_by_module = local.deploy_network
+        managed_by_module = resource.managed_by_module
       }
     ]
     azurerm_network_security_group = [
@@ -619,7 +1130,7 @@ locals {
           key != "resource_id" &&
           key != "managed_by_module"
         }
-        managed_by_module = local.deploy_network
+        managed_by_module = resource.managed_by_module
       }
     ]
     azurerm_route_table = [
@@ -634,13 +1145,13 @@ locals {
           key != "resource_id" &&
           key != "managed_by_module"
         }
-        managed_by_module = local.deploy_network
+        managed_by_module = resource.managed_by_module
       }
     ]
     azurerm_subnet_network_security_group_association = [
       for resource in local.azurerm_subnet_network_security_group_association :
       {
-        resource_id   = resource.subnet_id
+        resource_id = resource.subnet_id
         template = {
           for key, value in resource :
           key => value
@@ -648,13 +1159,13 @@ locals {
           key != "resource_id" &&
           key != "managed_by_module"
         }
-        managed_by_module = local.deploy_network
+        managed_by_module = resource.managed_by_module
       }
     ]
     azurerm_subnet_route_table_association = [
       for resource in local.azurerm_subnet_route_table_association :
       {
-        resource_id   = resource.subnet_id
+        resource_id = resource.subnet_id
         template = {
           for key, value in resource :
           key => value
@@ -662,7 +1173,7 @@ locals {
           key != "resource_id" &&
           key != "managed_by_module"
         }
-        managed_by_module = local.deploy_network
+        managed_by_module = resource.managed_by_module
       }
     ]
     azurerm_virtual_network_peering = [
@@ -677,7 +1188,22 @@ locals {
           key != "resource_id" &&
           key != "managed_by_module"
         }
-        managed_by_module = local.deploy_network
+        managed_by_module = resource.managed_by_module
+      }
+    ]
+    azurerm_virtual_hub_connection = [
+      for resource in local.azurerm_virtual_hub_connection :
+      {
+        resource_id   = resource.resource_id
+        resource_name = resource.name
+        template = {
+          for key, value in resource :
+          key => value
+          if local.deploy_network &&
+          key != "resource_id" &&
+          key != "managed_by_module"
+        }
+        managed_by_module = resource.managed_by_module
       }
     ]
     azurerm_storage_account = [
@@ -759,6 +1285,50 @@ locals {
         }
         managed_by_module = local.deploy_log_analytics_workspace
       },
+    ]
+    azurerm_user_assigned_identity = [
+      {
+        resource_id   = local.user_assigned_managed_identity_resource_id
+        resource_name = basename(local.user_assigned_managed_identity_resource_id)
+        template = {
+          for key, value in local.user_assigned_managed_identity :
+          key => value
+          if local.deploy_ama_uami
+        }
+        managed_by_module = local.deploy_ama_uami
+      }
+    ]
+    azurerm_monitor_data_collection_rule = [
+      {
+        resource_id   = local.azure_monitor_data_collection_rule_vm_insights_resource_id
+        resource_name = basename(local.azure_monitor_data_collection_rule_vm_insights_resource_id)
+        template = {
+          for key, value in local.azure_monitor_data_collection_rule_vm_insights :
+          key => value
+          if local.deploy_vminsights_dcr
+        }
+        managed_by_module = local.deploy_vminsights_dcr
+      },
+      {
+        resource_id   = local.azure_monitor_data_collection_rule_change_tracking_resource_id
+        resource_name = basename(local.azure_monitor_data_collection_rule_change_tracking_resource_id)
+        template = {
+          for key, value in local.azure_monitor_data_collection_rule_change_tracking :
+          key => value
+          if local.deploy_change_tracking_dcr
+        }
+        managed_by_module = local.deploy_change_tracking_dcr
+      },
+      {
+        resource_id   = local.azure_monitor_data_collection_rule_defender_sql_resource_id
+        resource_name = basename(local.azure_monitor_data_collection_rule_defender_sql_resource_id)
+        template = {
+          for key, value in local.azure_monitor_data_collection_rule_defender_sql :
+          key => value
+          if local.deploy_mdfc_defender_for_sql_dcr
+        }
+        managed_by_module = local.deploy_mdfc_defender_for_sql_dcr
+      }
     ]
     archetype_config_overrides = local.archetype_config_overrides
     template_file_variables    = local.template_file_variables

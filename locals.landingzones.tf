@@ -48,7 +48,7 @@ locals {
   }
 }
 
-# The following locals are used to build the map of subnet / Network Security Group associations 
+# The following locals are used to build the map of subnet / Network Security Group associations
 # to deploy.
 locals {
   azurerm_subnet_network_security_group_association_landingzones = {
@@ -73,6 +73,15 @@ locals {
 locals {
   azurerm_virtual_network_peering_landingzones = {
     for resource in module.landingzones_resources.configuration.azurerm_virtual_network_peering :
+    resource.resource_id => resource
+    if resource.managed_by_module
+  }
+}
+# The following locals are used to build the map of Virtual
+# Network Peerings to deploy.
+locals {
+  azurerm_virtual_hub_connection_landingzones = {
+    for resource in module.landingzones_resources.configuration.azurerm_virtual_hub_connection :
     resource.resource_id => resource
     if resource.managed_by_module
   }
@@ -104,6 +113,16 @@ locals {
   azurerm_consumption_budget_subscription_landingzones = {
     for resource in module.landingzones_resources.configuration.azurerm_consumption_budget_subscription :
     resource.resource_id => resource
+    if resource.managed_by_module
+  }
+}
+
+#the folowing locals are used to build the map of the
+# management group association
+locals {
+  azurerm_management_group_association = {
+    for resource in module.landingzones_resources.configuration.azurerm_management_group_association :
+    resource.resource_name => resource
     if resource.managed_by_module
   }
 }

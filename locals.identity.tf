@@ -78,6 +78,16 @@ locals {
   }
 }
 
+# The following locals are used to build the map of Virtual
+# Network Connections with vWAN Hub to deploy.
+locals {
+  azurerm_virtual_hub_connection_identity = {
+    for resource in module.identity_resources.configuration.azurerm_virtual_hub_connection :
+    resource.resource_id => resource
+    if resource.managed_by_module
+  }
+}
+
 # The following locals are used to build the map of Key
 # Vaults to deploy.
 locals {

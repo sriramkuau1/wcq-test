@@ -32,8 +32,8 @@ configure_identity_resources = {
             {
               name                          = "Identity"
               address_prefixes              = ["10.102.0.0/25"]
-              disable_bgp_route_propagation = true
-              routes = []
+              bgp_route_propagation_enabled = false
+              routes                        = []
               rules = [
                 {
                   name                       = "AllowInbound"
@@ -62,7 +62,7 @@ configure_identity_resources = {
               service_endpoints = []
             }
           ]
-          hub_network_id               = "resource_id"
+          hub_network_id               = "hub-vnet"
           allow_virtual_network_access = true
           allow_forwarded_traffic      = true
           use_remote_gateways          = false

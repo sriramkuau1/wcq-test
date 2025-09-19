@@ -31,12 +31,12 @@ configure_landingzones_resources = {
     rbac = [
       {
         role_definition_id = "/subscriptions/***/providers/Microsoft.Authorization/roleDefinitions/***"
-        principal_id = ""
+        principal_id       = ""
       },
-      {
-        role_definition_id = "/subscriptions/***/providers/Microsoft.Authorization/roleDefinitions/***"
-        principal_id = ""
-      }
+      # {
+      #   role_definition_id = "/subscriptions/***/providers/Microsoft.Authorization/roleDefinitions/***"
+      #   principal_id       = ""
+      # }
     ]
     spoke_networks = [
       {
@@ -51,7 +51,7 @@ configure_landingzones_resources = {
             {
               name                          = "avd"
               address_prefixes              = ["10.103.0.0/25"]
-              disable_bgp_route_propagation = true
+              bgp_route_propagation_enabled = false
               routes                        = []
               rules = [
                 {
@@ -83,7 +83,7 @@ configure_landingzones_resources = {
             {
               name                          = "pe"
               address_prefixes              = ["10.103.0.128/25"]
-              disable_bgp_route_propagation = true
+              bgp_route_propagation_enabled = false
               routes                        = []
               rules = [
                 {
@@ -113,7 +113,7 @@ configure_landingzones_resources = {
               service_endpoints = []
             }
           ]
-          hub_network_id               = "resource_id"
+          hub_network_id               = "hub-vnet"
           allow_virtual_network_access = true
           allow_forwarded_traffic      = true
           use_remote_gateways          = false

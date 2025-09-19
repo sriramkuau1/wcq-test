@@ -53,7 +53,7 @@ resource "azurerm_subnet" "management" {
   address_prefixes     = each.value.template.address_prefixes
 
   # Optional resource attributes
-  private_endpoint_network_policies_enabled     = each.value.template.private_endpoint_network_policies_enabled
+  private_endpoint_network_policies             = each.value.template.private_endpoint_network_policies
   private_link_service_network_policies_enabled = each.value.template.private_link_service_network_policies_enabled
   service_endpoints                             = each.value.template.service_endpoints
   service_endpoint_policy_ids                   = each.value.template.service_endpoint_policy_ids
@@ -93,21 +93,25 @@ resource "azurerm_network_security_group" "management" {
   location            = each.value.template.location
 
   # Optional resource attributes
-  tags          = each.value.template.tags
+  tags = each.value.template.tags
 
   # Dynamic configuration blocks
   dynamic "security_rule" {
     for_each = each.value.template.security_rule
     content {
-      name                        = security_rule.value["name"]
-      priority                    = security_rule.value["priority"]
-      direction                   = security_rule.value["direction"]
-      access                      = security_rule.value["access"]
-      protocol                    = security_rule.value["protocol"]
-      source_port_range           = security_rule.value["source_port_range"]
-      destination_port_range      = security_rule.value["destination_port_range"]
-      source_address_prefix       = security_rule.value["source_address_prefix"]
-      destination_address_prefix  = security_rule.value["destination_address_prefix"]
+      name                         = security_rule.value["name"]
+      priority                     = security_rule.value["priority"]
+      direction                    = security_rule.value["direction"]
+      access                       = security_rule.value["access"]
+      protocol                     = security_rule.value["protocol"]
+      source_port_range            = security_rule.value["source_port_range"]
+      source_port_ranges           = security_rule.value["source_port_ranges"]
+      destination_port_range       = security_rule.value["destination_port_range"]
+      destination_port_ranges      = security_rule.value["destination_port_ranges"]
+      source_address_prefix        = security_rule.value["source_address_prefix"]
+      source_address_prefixes      = security_rule.value["source_address_prefixes"]
+      destination_address_prefix   = security_rule.value["destination_address_prefix"]
+      destination_address_prefixes = security_rule.value["destination_address_prefixes"]
     }
   }
 
@@ -129,17 +133,17 @@ resource "azurerm_route_table" "management" {
   location            = each.value.template.location
 
   # Optional resource attributes
-  disable_bgp_route_propagation = each.value.template.disable_bgp_route_propagation
+  bgp_route_propagation_enabled = each.value.template.bgp_route_propagation_enabled
   tags                          = each.value.template.tags
 
   # Dynamic configuration blocks
   dynamic "route" {
     for_each = each.value.template.route
     content {
-      name                    = route.value["name"]
-      address_prefix          = route.value["address_prefix"]
-      next_hop_type           = route.value["next_hop_type"]
-      next_hop_in_ip_address  = route.value["next_hop_in_ip_address"]
+      name                   = route.value["name"]
+      address_prefix         = route.value["address_prefix"]
+      next_hop_type          = route.value["next_hop_type"]
+      next_hop_in_ip_address = route.value["next_hop_in_ip_address"]
     }
   }
 
@@ -156,8 +160,8 @@ resource "azurerm_subnet_route_table_association" "management" {
   provider = azurerm.management
 
   # Mandatory resource attributes
-  subnet_id         = each.value.template.subnet_id
-  route_table_id    = each.value.template.route_table_id
+  subnet_id      = each.value.template.subnet_id
+  route_table_id = each.value.template.route_table_id
 
   # Set explicit dependencies
   depends_on = [
@@ -173,8 +177,8 @@ resource "azurerm_subnet_network_security_group_association" "management" {
   provider = azurerm.management
 
   # Mandatory resource attributes
-  subnet_id                     = each.value.template.subnet_id
-  network_security_group_id     = each.value.template.network_security_group_id
+  subnet_id                 = each.value.template.subnet_id
+  network_security_group_id = each.value.template.network_security_group_id
 
   # Set explicit dependencies
   depends_on = [
@@ -195,9 +199,9 @@ resource "azurerm_storage_account" "management" {
   resource_group_name = each.value.template.resource_group_name
 
   # Optional resource attributes
-  account_tier                       = each.value.template.account_tier
-  account_replication_type           = each.value.template.account_replication_type
-  tags                               = each.value.template.tags
+  account_tier             = each.value.template.account_tier
+  account_replication_type = each.value.template.account_replication_type
+  tags                     = each.value.template.tags
 
   # Set explicit dependency on Resource Group deployment
   depends_on = [
@@ -338,16 +342,17 @@ resource "azurerm_log_analytics_linked_service" "management" {
   ]
 
 }
+
 resource "azurerm_log_analytics_linked_storage_account" "management" {
   for_each = local.azurerm_log_analytics_linked_storage_account_management
 
   provider = azurerm.management
 
   # Mandatory resource attributes
-  data_source_type        = each.value.template.data_source_type
-  resource_group_name     = each.value.template.resource_group_name
-  workspace_resource_id   = each.value.template.workspace_resource_id
-  storage_account_ids     = each.value.template.storage_account_ids
+  data_source_type      = each.value.template.data_source_type
+  resource_group_name   = each.value.template.resource_group_name
+  workspace_resource_id = each.value.template.workspace_resource_id
+  storage_account_ids   = each.value.template.storage_account_ids
 
   # Set explicit dependency on Resource Group, Log Analytics workspace and Automation Account deployments
   depends_on = [
@@ -383,6 +388,52 @@ resource "azurerm_virtual_network_peering" "management" {
   ]
 }
 
+resource "azurerm_virtual_hub_connection" "management" {
+  for_each = local.azurerm_virtual_hub_connection_management
+
+  provider = azurerm.management
+
+  # Mandatory resource attributes
+  name                      = each.value.template.name
+  virtual_hub_id            = each.value.template.virtual_hub_id
+  remote_virtual_network_id = each.value.template.remote_virtual_network_id
+
+  # Optional resource attributes
+  internet_security_enabled = each.value.template.internet_security_enabled
+
+  # Dynamic configuration blocks
+  dynamic "routing" {
+    for_each = each.value.template.routing
+    content {
+      # Optional attributes
+      associated_route_table_id = lookup(routing.value, "associated_route_table_id", null)
+      dynamic "propagated_route_table" {
+        for_each = lookup(routing.value, "propagated_route_table", local.empty_list)
+        content {
+          # Optional attributes
+          labels          = lookup(propagated_route_table.value, "labels", null)
+          route_table_ids = lookup(propagated_route_table.value, "route_table_ids", null)
+        }
+      }
+      dynamic "static_vnet_route" {
+        for_each = lookup(routing.value, "static_vnet_route", local.empty_list)
+        content {
+          # Optional attributes
+          name                = lookup(static_vnet_route.value, "name", null)
+          address_prefixes    = lookup(static_vnet_route.value, "address_prefixes", null)
+          next_hop_ip_address = lookup(static_vnet_route.value, "next_hop_ip_address", null)
+        }
+      }
+    }
+  }
+
+  # Set explicit dependencies
+  depends_on = [
+    azurerm_resource_group.management,
+    azurerm_virtual_network.management,
+  ]
+
+}
 
 resource "azurerm_monitor_action_group" "management" {
   for_each = local.azurerm_monitor_action_group_management
@@ -406,3 +457,35 @@ resource "azurerm_monitor_action_group" "management" {
     azurerm_resource_group.management,
   ]
 }
+
+resource "azurerm_user_assigned_identity" "management" {
+  for_each = local.azurerm_user_assigned_identity_management
+
+  provider = azurerm.management
+  # Mandatory resource attributes
+  name                = each.value.template.name
+  location            = each.value.template.location
+  resource_group_name = each.value.template.resource_group_name
+
+  # Optional resource attributes
+  tags = each.value.template.tags
+
+  # Set explicit dependency on Resource Group deployment
+  depends_on = [
+    azurerm_resource_group.management,
+  ]
+}
+
+resource "azapi_resource" "data_collection_rule" {
+  for_each                  = local.azurerm_monitor_data_collection_rule_management
+  name                      = each.value.template.name
+  parent_id                 = each.value.template.parent_id
+  type                      = each.value.template.type
+  location                  = each.value.template.location
+  tags                      = each.value.template.tags
+  schema_validation_enabled = each.value.template.schema_validation_enabled
+  body                      = each.value.template.body
+
+  depends_on = [azurerm_log_analytics_workspace.management]
+}
+
