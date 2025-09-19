@@ -103,6 +103,36 @@ module "connectivity_resources" {
 
 # The following module is used to generate the configuration
 # data used to deploy platform resources based on the
+# "security" landing zone archetype.
+module "security_resources" {
+  source = "./modules/security"
+
+  # Mandatory input variables
+  enabled             = local.deploy_security_resources
+  root_id             = local.root_id
+  resource_type_names = local.resource_type_names
+  subscription_id     = local.subscription_id_security
+  settings            = local.configure_security_resources.settings
+
+  # Optional input variables (basic configuration)
+  location = coalesce(local.configure_security_resources.location, local.default_location)
+  tags     = local.security_resources_tags
+
+  # Optional input variables (advanced configuration)
+  resource_prefix                              = lookup(local.security_resources_advanced, "resource_prefix", local.empty_string)
+  resource_suffix                              = lookup(local.security_resources_advanced, "resource_suffix", local.empty_string)
+  existing_resource_group_name                 = lookup(local.security_resources_advanced, "existing_resource_group_name", local.empty_string)
+  existing_log_analytics_workspace_resource_id = lookup(local.security_resources_advanced, "existing_log_analytics_workspace_resource_id", local.empty_string)
+  existing_automation_account_resource_id      = lookup(local.security_resources_advanced, "existing_automation_account_resource_id", local.empty_string)
+  link_log_analytics_to_automation_account     = lookup(local.security_resources_advanced, "link_log_analytics_to_automation_account", true)
+  custom_azure_backup_geo_codes                = lookup(local.security_resources_advanced, "custom_azure_backup_geo_codes", local.empty_map)
+  custom_settings_by_resource_type             = lookup(local.security_resources_advanced, "custom_settings_by_resource_type", local.empty_map)
+  asc_export_resource_group_name               = lookup(local.security_resources_advanced, "asc_export_resource_group_name", local.empty_string)
+}
+
+
+# The following module is used to generate the configuration
+# data used to deploy platform resources based on the
 # "landing zones" landing zone archetype.
 module "landingzones_resources" {
   source = "./modules/landingzones"

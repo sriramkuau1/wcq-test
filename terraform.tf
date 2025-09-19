@@ -64,3 +64,10 @@ provider "azurerm" {
   features {}
   alias = "landingzones"
 }
+
+provider "azurerm" {
+  # skip_provider_registration = "true"
+  subscription_id = local.subscription_id_security
+  features {}
+  alias = "security"
+}

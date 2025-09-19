@@ -253,6 +253,7 @@ To do this, simply create an entry similar to the root example below for one or 
 - connectivity
 - management
 - identity
+- security
 - corp
 - online
 - sap

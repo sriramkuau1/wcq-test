@@ -43,11 +43,11 @@
 # subdirectories.
 #/docs/ @doctocat
 
-# In this example, @octocat owns any file in the `/apps` 
-# directory in the root of your repository except for the `/apps/github` 
+# In this example, @octocat owns any file in the `/apps`
+# directory in the root of your repository except for the `/apps/github`
 # subdirectory, as its owners are left empty.
 #/apps/ @octocat
-#/apps/github 
+#/apps/github
 
 
 
@@ -55,4 +55,4 @@
 #*  @Insight-Services-APAC/devops-capability-leads
 
 .github/settings.yml @Insight-Services-APAC/github-admins
-* @ahmedig @paullisto-insight
+* @paullisto-insight @bnlf @apj0505 @tobias2022

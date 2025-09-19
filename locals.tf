@@ -22,17 +22,20 @@ locals {
   deploy_management_resources      = var.deploy_management_resources
   deploy_identity_resources        = var.deploy_identity_resources
   deploy_connectivity_resources    = var.deploy_connectivity_resources
+  deploy_security_resources        = var.deploy_security_resources
   deploy_landingzones_resources    = var.deploy_landingzones_resources
   deploy_diagnostics_for_mg        = var.deploy_diagnostics_for_mg
   configure_management_resources   = var.configure_management_resources
   configure_identity_resources     = var.configure_identity_resources
   configure_connectivity_resources = var.configure_connectivity_resources
+  configure_security_resources     = var.configure_security_resources
   configure_landingzones_resources = var.configure_landingzones_resources
   archetype_config_overrides       = var.archetype_config_overrides
   subscription_id_overrides        = var.subscription_id_overrides
   subscription_id_connectivity     = var.subscription_id_connectivity
   subscription_id_identity         = var.subscription_id_identity
   subscription_id_management       = var.subscription_id_management
+  subscription_id_security         = var.subscription_id_security
   subscription_id_landingzones     = var.subscription_id_landingzones
   custom_landing_zones             = var.custom_landing_zones
   custom_policy_roles              = var.custom_policy_roles
@@ -42,6 +45,7 @@ locals {
     module.connectivity_resources.configuration.template_file_variables,
     module.identity_resources.configuration.template_file_variables,
     module.management_resources.configuration.template_file_variables,
+    module.security_resources.configuration.template_file_variables,
     module.landingzones_resources.configuration.template_file_variables,
   )
   default_location                = var.default_location
@@ -89,6 +93,10 @@ locals {
     local.create_object,
     coalesce(local.configure_identity_resources.advanced, local.empty_map)
   )
+  security_resources_advanced = merge(
+    local.create_object,
+    coalesce(local.configure_security_resources.advanced, local.empty_map)
+  )
   landingzones_resources_advanced = merge(
     local.create_object,
     coalesce(local.configure_landingzones_resources.advanced, local.empty_map)
@@ -118,6 +126,11 @@ locals {
     local.disable_base_module_tags ? local.empty_map : local.base_module_tags,
     local.default_tags,
     local.configure_identity_resources.tags,
+  )
+  security_resources_tags = merge(
+    local.disable_base_module_tags ? local.empty_map : local.base_module_tags,
+    local.default_tags,
+    local.configure_security_resources.tags,
   )
   landingzones_resources_tags = merge(
     local.disable_base_module_tags ? local.empty_map : local.base_module_tags,
