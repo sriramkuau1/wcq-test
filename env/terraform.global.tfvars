@@ -7,6 +7,7 @@ subscription_id_connectivity = ""
 subscription_id_identity     = ""
 subscription_id_management   = ""
 subscription_id_landingzones = ""
+subscription_id_security     = ""
 
 resource_type_names = {
   resource_group                              = "arg"

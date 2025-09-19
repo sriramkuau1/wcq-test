@@ -9,6 +9,7 @@ terraform {
         azurerm.management,
         azurerm.identity,
         azurerm.landingzones,
+        azurerm.security,
       ]
     }
     time = {
@@ -66,8 +67,8 @@ provider "azurerm" {
 }
 
 provider "azurerm" {
-  # skip_provider_registration = "true"
-  subscription_id = local.subscription_id_security
+  resource_provider_registrations = "none"
+  subscription_id                 = local.subscription_id_security
   features {}
   alias = "security"
 }

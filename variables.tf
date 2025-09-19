@@ -315,13 +315,129 @@ variable "configure_identity_resources" {
           })
         })
       ), [])
-      action_group_name       = optional(string, "")
-      action_group_shortname  = optional(string, "")
-      contact_email           = optional(string, "")
+      action_group_name      = optional(string, "")
+      action_group_shortname = optional(string, "")
+      contact_email          = optional(string, "")
     }), {})
-    location                = optional(string, "")
-    tags                    = optional(any, {})
-    advanced                = optional(any, {})
+    location = optional(string, "")
+    tags     = optional(any, {})
+    advanced = optional(any, {})
+  })
+  description = "If specified, will customize the \"Security\" landing zone settings and resources."
+  default     = {}
+}
+
+variable "deploy_security_resources" {
+  type        = bool
+  description = "If set to true, will enable the \"Security\" landing zone settings and add \"Security\" resources into the current Subscription context."
+  default     = false
+}
+
+variable "configure_security_resources" {
+  type = object({
+    settings = optional(object({
+      log_analytics = optional(object({
+        enabled = optional(bool, true)
+        config = optional(object({
+          retention_in_days                                 = optional(number, 30)
+          enable_monitoring_for_vm                          = optional(bool, true)
+          enable_monitoring_for_vmss                        = optional(bool, true)
+          enable_solution_for_agent_health_assessment       = optional(bool, true)
+          enable_solution_for_anti_malware                  = optional(bool, true)
+          enable_solution_for_change_tracking               = optional(bool, true)
+          enable_solution_for_service_map                   = optional(bool, false)
+          enable_solution_for_sql_assessment                = optional(bool, true)
+          enable_solution_for_sql_vulnerability_assessment  = optional(bool, true)
+          enable_solution_for_sql_advanced_threat_detection = optional(bool, true)
+          enable_solution_for_updates                       = optional(bool, true)
+          enable_solution_for_vm_insights                   = optional(bool, true)
+          enable_solution_for_container_insights            = optional(bool, true)
+          enable_sentinel                                   = optional(bool, true)
+        }), {})
+      }), {})
+      security_center = optional(object({
+        enabled = optional(bool, true)
+        config = optional(object({
+          email_security_contact                                = optional(string, "security_contact@replace_me")
+          enable_defender_for_apis                              = optional(bool, true)
+          enable_defender_for_app_services                      = optional(bool, true)
+          enable_defender_for_arm                               = optional(bool, true)
+          enable_defender_for_containers                        = optional(bool, true)
+          enable_defender_for_cosmosdbs                         = optional(bool, true)
+          enable_defender_for_cspm                              = optional(bool, true)
+          enable_defender_for_dns                               = optional(bool, true)
+          enable_defender_for_key_vault                         = optional(bool, true)
+          enable_defender_for_oss_databases                     = optional(bool, true)
+          enable_defender_for_servers                           = optional(bool, true)
+          enable_defender_for_servers_vulnerability_assessments = optional(bool, true)
+          enable_defender_for_sql_servers                       = optional(bool, true)
+          enable_defender_for_sql_server_vms                    = optional(bool, true)
+          enable_defender_for_storage                           = optional(bool, true)
+        }), {})
+      }), {})
+      spoke_networks = optional(list(
+        object({
+          identifier = optional(string, "")
+          enabled    = optional(bool, true)
+          config = object({
+            address_space                = list(string)
+            location                     = optional(string, "")
+            link_to_ddos_protection_plan = optional(bool, false)
+            dns_servers                  = optional(list(string), [])
+            subnets = optional(list(
+              object({
+                name                          = string
+                address_prefixes              = list(string)
+                disable_bgp_route_propagation = optional(bool, false)
+                rules = optional(list(
+                  object({
+                    name                       = optional(string, "")
+                    priority                   = optional(number, 100)
+                    direction                  = optional(string, "")
+                    access                     = optional(string, "")
+                    protocol                   = optional(string, "")
+                    source_port_range          = optional(string, "")
+                    destination_port_range     = optional(string, "")
+                    source_address_prefix      = optional(string, "")
+                    destination_address_prefix = optional(string, "")
+                  })
+                ), [])
+                routes = optional(list(
+                  object({
+                    name                   = optional(string, "")
+                    address_prefix         = optional(string, "")
+                    next_hop_type          = optional(string, "")
+                    next_hop_in_ip_address = optional(string, null)
+                  })
+                ), [])
+                delegations = optional(list(
+                  object({
+                    name = optional(string, "")
+                    service_delegation = optional(list(
+                      object({
+                        name    = optional(string, "")
+                        actions = optional(list(string), [])
+                      })
+                    ), [])
+                  })
+                ), [])
+                service_endpoints = optional(list(string), [])
+              })
+            ), [])
+            hub_network_id               = optional(string, "")
+            allow_virtual_network_access = optional(bool, true)
+            allow_forwarded_traffic      = optional(bool, true)
+            use_remote_gateways          = optional(bool, false)
+          })
+        })
+      ), [])
+      action_group_name      = optional(string, "")
+      action_group_shortname = optional(string, "")
+      contact_email          = optional(string, "")
+    }), {})
+    location = optional(string, "")
+    tags     = optional(any, {})
+    advanced = optional(any, {})
   })
   description = "If specified, will customize the \"Security\" landing zone settings and resources."
   default     = {}
