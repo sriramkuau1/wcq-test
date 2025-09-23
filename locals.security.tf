@@ -101,26 +101,6 @@ locals {
 # The following locals are used to build the map of Log
 # Analytics workspaces to deploy.
 locals {
-  azurerm_automation_account_security = {
-    for resource in module.security_resources.configuration.azurerm_automation_account :
-    resource.resource_id => resource
-    if resource.managed_by_module
-  }
-}
-
-# The following locals are used to build the map of Log
-# Analytics workspaces to deploy.
-locals {
-  azurerm_log_analytics_linked_service_security = {
-    for resource in module.security_resources.configuration.azurerm_log_analytics_linked_service :
-    resource.resource_id => resource
-    if resource.managed_by_module
-  }
-}
-
-# The following locals are used to build the map of Log
-# Analytics workspaces to deploy.
-locals {
   azurerm_log_analytics_linked_storage_account_security = {
     for resource in module.security_resources.configuration.azurerm_log_analytics_linked_storage_account :
     resource.resource_id => resource
@@ -134,16 +114,6 @@ locals {
   azurerm_virtual_network_peering_security = {
     for resource in module.security_resources.configuration.azurerm_virtual_network_peering :
     resource.resource_id => resource
-    if resource.managed_by_module
-  }
-}
-
-# The following locals are used to build the map of action
-# groups to deploy.
-locals {
-  azurerm_monitor_action_group_security = {
-    for resource in module.security_resources.configuration.azurerm_monitor_action_group :
-    resource.resource_name => resource
     if resource.managed_by_module
   }
 }

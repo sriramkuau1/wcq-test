@@ -323,7 +323,7 @@ variable "configure_identity_resources" {
     tags     = optional(any, {})
     advanced = optional(any, {})
   })
-  description = "If specified, will customize the \"Security\" landing zone settings and resources."
+  description = "If specified, will customize the \"Identity\" landing zone settings and resources."
   default     = {}
 }
 
@@ -431,9 +431,6 @@ variable "configure_security_resources" {
           })
         })
       ), [])
-      action_group_name      = optional(string, "")
-      action_group_shortname = optional(string, "")
-      contact_email          = optional(string, "")
     }), {})
     location = optional(string, "")
     tags     = optional(any, {})

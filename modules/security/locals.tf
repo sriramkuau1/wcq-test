@@ -23,8 +23,6 @@ locals {
   resource_suffix                              = length(var.resource_suffix) > 0 ? "-${var.resource_suffix}" : local.empty_string
   existing_resource_group_name                 = var.existing_resource_group_name
   existing_log_analytics_workspace_resource_id = var.existing_log_analytics_workspace_resource_id
-  existing_automation_account_resource_id      = var.existing_automation_account_resource_id
-  link_log_analytics_to_automation_account     = var.link_log_analytics_to_automation_account
   custom_settings                              = var.custom_settings_by_resource_type
   custom_azure_backup_geo_codes                = var.custom_azure_backup_geo_codes
   asc_export_resource_group_name               = coalesce(var.asc_export_resource_group_name, "${local.root_id}-asc-export")
@@ -41,7 +39,6 @@ locals {
   custom_settings_route_tables              = try(local.custom_settings.azurerm_route_table, local.empty_map)
   custom_settings_storage_account           = try(local.custom_settings.azurerm_storage_account["security"], local.empty_map)
   custom_settings_la_solution               = try(local.custom_settings.azurerm_log_analytics_solution["security"], local.empty_map)
-  custom_settings_aa                        = try(local.custom_settings.azurerm_automation_account["security"], local.empty_map)
   custom_settings_la_linked_service         = try(local.custom_settings.azurerm_log_analytics_linked_service["security"], local.empty_map)
 }
 
@@ -55,8 +52,6 @@ locals {
   deploy_resource_group               = local.deploy_monitoring_resources && local.existing_resource_group_name == local.empty_string
   deploy_network                      = local.deploy_monitoring_resources && local.settings.spoke_networks != local.empty_list
   deploy_log_analytics_workspace      = local.deploy_monitoring_resources && local.existing_log_analytics_workspace_resource_id == local.empty_string
-  deploy_log_analytics_linked_service = local.deploy_monitoring_resources && local.link_log_analytics_to_automation_account
-  deploy_automation_account           = local.deploy_monitoring_resources && local.existing_automation_account_resource_id == local.empty_string
   deploy_sentinel_log_analytics_workspace_onboarding = local.deploy_monitoring_resources && local.settings.log_analytics.config.enable_sentinel
   deploy_azure_monitor_solutions = {
     AgentHealthAssessment       = local.deploy_monitoring_resources && local.settings.log_analytics.config.enable_solution_for_agent_health_assessment
@@ -332,7 +327,7 @@ locals {
 locals {
   storage_account_resource_id = "${local.resource_group_resource_id.security}/providers/Microsoft.Storage/storageAccounts/${local.azurerm_storage_account.name}"
   azurerm_storage_account = {
-    name                               = lookup(local.custom_settings_storage_account, "name", "${local.resource_type_names.storage_account}${local.resource_type_names.organization}${lookup(local.custom_azure_backup_geo_codes, local.location, local.location)}platmgmt01${local.resource_suffix}")
+    name                               = lookup(local.custom_settings_storage_account, "name", "${local.resource_type_names.storage_account}${local.resource_type_names.organization}${lookup(local.custom_azure_backup_geo_codes, local.location, local.location)}platsec01${local.resource_suffix}")
     resource_group_name                = lookup(local.custom_settings_storage_account, "resource_group_name", local.resource_group_name.security)
     location                           = lookup(local.custom_settings_storage_account, "location", local.location)
     account_tier                       = lookup(local.custom_settings_storage_account, "account_tier", "Standard")
@@ -389,48 +384,6 @@ locals {
   ]
 }
 
-# Configuration settings for resource type:
-#  - azurerm_automation_account
-locals {
-  automation_account_resource_id = coalesce(
-    local.existing_automation_account_resource_id,
-    "${local.resource_group_resource_id.security}/providers/Microsoft.Automation/automationAccounts/${local.azurerm_automation_account.name}"
-  )
-  # As per issue #449, some automation accounts should be created in a different region to the log analytics workspace
-  # The automation_account_location_map local is used to track these
-  automation_account_location_map = {
-    eastus  = "eastus2"
-    eastus2 = "eastus"
-  }
-  automation_account_location = coalesce(
-    lookup(local.custom_settings_aa, "location", null),
-    lookup(local.automation_account_location_map, local.location, local.location)
-  )
-  azurerm_automation_account = {
-    name                          = lookup(local.custom_settings_aa, "name", "${local.resource_type_names.azure_automation}-${lookup(local.custom_azure_backup_geo_codes, local.location, local.location)}-${local.resource_prefix}-01${local.resource_suffix}")
-    resource_group_name           = lookup(local.custom_settings_aa, "resource_group_name", local.resource_group_name.security)
-    location                      = lookup(local.custom_settings_aa, "location", local.automation_account_location)
-    sku_name                      = lookup(local.custom_settings_aa, "sku_name", "Basic")
-    public_network_access_enabled = lookup(local.custom_settings_aa, "public_network_access_enabled", true)
-    local_authentication_enabled  = lookup(local.custom_settings_aa, "local_authentication_enabled", true)
-    identity                      = lookup(local.custom_settings_aa, "identity", local.empty_list)
-    encryption                    = lookup(local.custom_settings_aa, "encryption", local.empty_list)
-    tags                          = lookup(local.custom_settings_aa, "tags", local.tags)
-  }
-}
-
-# Configuration settings for resource type:
-#  - azurerm_log_analytics_linked_service
-locals {
-  log_analytics_linked_service_resource_id = "${local.log_analytics_workspace_resource_id}/linkedServices/Automation"
-  azurerm_log_analytics_linked_service = {
-    resource_group_name = lookup(local.custom_settings_la_linked_service, "resource_group_name", local.resource_group_name.security)
-    workspace_id        = lookup(local.custom_settings_la_linked_service, "workspace_id", local.log_analytics_workspace_resource_id)
-    read_access_id      = lookup(local.custom_settings_la_linked_service, "read_access_id", local.automation_account_resource_id) # This should be used for linking to an Automation Account resource.
-    write_access_id     = null                                                                                                    # DO NOT USE. This should be used for linking to a Log Analytics Cluster resource
-  }
-}
-
 locals{
   log_analytics_linked_storage_account_resource_id = "${local.log_analytics_workspace_resource_id}/linkedStorageAccounts/CustomLogs"
   azurerm_log_analytics_linked_storage_account = {
@@ -441,23 +394,12 @@ locals{
   }
 }
 
-# Configuration settings for the action groups:
-# - azurerm_monitor_action_group
-locals {
-  azurerm_monitor_action_group = {
-
-    resource_id            = "${local.resource_group_resource_id["security"]}/providers/Microsoft.Insights/actiongroups/${local.settings.action_group_name}"
-    name                   = "${local.settings.action_group_name}"
-    resource_group_name    = local.resource_group_name["security"]
-    action_group_shortname = local.settings.action_group_shortname
-    tags                   = local.tags
-    email_receiver         = {
-      name = "Default"
-      email_address = local.settings.contact_email
-    }
+locals{
+  log_analytics_workspace_onboarding_resource_id = "${local.log_analytics_workspace_resource_id}/providers/Microsoft.SecurityInsights/onboardingStates/default"
+  azurerm_sentinel_log_analytics_workspace_onboarding = {
+    workspace_id = lookup(local.custom_settings_la_linked_service, "workspace_id", local.log_analytics_workspace_resource_id)
   }
 }
-
 
 # Archetype configuration overrides
 locals {
@@ -499,9 +441,6 @@ locals {
         Deploy-Flow-Logs = {
           storageId = local.storage_account_resource_id
         }
-        Deploy-ServiceHealth ={
-          actionGroupId = local.azurerm_monitor_action_group.resource_id
-        }
       }
       enforcement_mode = {
         Deploy-MDFC-Config     = local.deploy_security_settings
@@ -520,8 +459,6 @@ locals {
     "${local.root_id}-platform-security" = {
       parameters = {
         Deploy-Log-Analytics = {
-          automationAccountName = local.azurerm_automation_account.name
-          automationRegion      = local.azurerm_automation_account.location
           rgName                = local.resource_group_name.security
           workspaceName         = local.azurerm_log_analytics_workspace.name
           workspaceRegion       = local.azurerm_log_analytics_workspace.location
@@ -545,11 +482,8 @@ locals {
     log_analytics_workspace_resource_id = local.log_analytics_workspace_resource_id
     log_analytics_workspace_name        = local.azurerm_log_analytics_workspace.name
     log_analytics_workspace_location    = local.azurerm_log_analytics_workspace.location
-    automation_account_resource_id      = local.automation_account_resource_id
-    automation_account_name             = local.azurerm_automation_account.name
-    automation_account_location         = local.azurerm_automation_account.location
-    security_location                 = local.location
-    security_resource_group_name      = local.resource_group_name.security
+    security_location                   = local.location
+    security_resource_group_name        = local.resource_group_name.security
     data_retention                      = tostring(local.azurerm_log_analytics_workspace.retention_in_days)
   }
 }
@@ -714,47 +648,12 @@ locals {
         managed_by_module = true
       }
     ]
-    azurerm_automation_account = [
-      {
-        resource_id   = local.automation_account_resource_id
-        resource_name = basename(local.automation_account_resource_id)
-        template = {
-          for key, value in local.azurerm_automation_account :
-          key => value
-          if local.deploy_automation_account
-        }
-        managed_by_module = local.deploy_automation_account
-      },
-    ]
-    azurerm_log_analytics_linked_service = [
-      {
-        resource_id   = local.log_analytics_linked_service_resource_id
-        resource_name = basename(local.log_analytics_linked_service_resource_id)
-        template = {
-          for key, value in local.azurerm_log_analytics_linked_service :
-          key => value
-          if local.deploy_log_analytics_linked_service
-        }
-        managed_by_module = local.deploy_log_analytics_linked_service
-      },
-    ]
     azurerm_log_analytics_linked_storage_account = [
       {
         resource_id   = local.log_analytics_linked_storage_account_resource_id
         resource_name = basename(local.log_analytics_linked_storage_account_resource_id)
         template = {
           for key, value in local.azurerm_log_analytics_linked_storage_account :
-          key => value
-          if local.deploy_log_analytics_linked_service
-        }
-        managed_by_module = local.deploy_log_analytics_linked_service
-      },
-    ]
-    azurerm_monitor_action_group = [
-      {
-        resource_name = local.azurerm_monitor_action_group.name
-        template = {
-          for key, value in local.azurerm_monitor_action_group :
           key => value
           if local.deploy_log_analytics_workspace
         }
@@ -763,7 +662,12 @@ locals {
     ]
     azurerm_sentinel_log_analytics_workspace_onboarding = [
       {
-        workspace_resource_id = local.log_analytics_workspace_resource_id
+        resource_id   = local.log_analytics_workspace_onboarding_resource_id
+        template = {
+          for key, value in local.azurerm_sentinel_log_analytics_workspace_onboarding :
+          key => value
+          if local.deploy_monitoring_resources && local.settings.log_analytics.config.enable_sentinel
+        }
         managed_by_module     = local.deploy_sentinel_log_analytics_workspace_onboarding
       },
     ]

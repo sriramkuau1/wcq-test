@@ -23,8 +23,7 @@ configure_security_resources = {
         enable_solution_for_updates                         = true
         enable_solution_for_vm_insights                     = true
         enable_solution_for_container_insights              = true
-        enable_sentinel                                     = false
-        deploy_sentinel_log_analytics_workspace_onboarding  = true
+        enable_sentinel                                     = true
       }
     }
     spoke_networks = [
@@ -77,9 +76,6 @@ configure_security_resources = {
         }
       }
     ]
-    action_group_name       = "platformActionGroup"
-    action_group_shortname  = "platActnGrp"
-    contact_email           = "test@test.com"
   }
 
   location = "australiaeast"
