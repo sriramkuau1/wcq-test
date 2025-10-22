@@ -228,10 +228,10 @@ resource "azurerm_virtual_network_gateway" "connectivity" {
     content {
       # Mandatory attributes
       subnet_id            = ip_configuration.value["subnet_id"]
-      public_ip_address_id = ip_configuration.value["public_ip_address_id"]
       # Optional attributes
       name                          = try(ip_configuration.value["name"], null)
       private_ip_address_allocation = try(ip_configuration.value["private_ip_address_allocation"], null)
+      public_ip_address_id          = try(ip_configuration.value["public_ip_address_id"], null)
     }
   }
 

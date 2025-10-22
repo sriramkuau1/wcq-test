@@ -1,0 +1,262 @@
+{
+  "name": "Deploy-VNet-FlowLogs",
+  "type": "Microsoft.Authorization/policyDefinitions",
+  "apiVersion": "2021-06-01",
+  "scope": "${current_scope_resource_id}",
+  "properties": {
+    "policyType": "Custom",
+    "mode": "Indexed",
+    "displayName": "Configure Virtual Network to enable Flow Log and Traffic Analytics",
+    "description": "Traffic analytics and Flow logs can be enabled for all virtual networks hosted in a particular region with the settings provided during policy creation. This policy does not overwrite current setting for virtual networks that already have these feature enabled. Traffic analytics is a cloud-based solution that provides visibility into user and application activity in cloud networks.",
+    "metadata": {
+      "version": "1.0.0",
+      "category": "Network"
+    },
+    "parameters": {
+      "storageAccountResourceId": {
+        "type": "string",
+        "metadata": {
+          "displayName": "Storage Account Resource Id",
+          "description": "Select Storage Account from dropdown list. If this storage account is outside of the scope of the assignment you must manually grant 'Storage Account Contributor' permissions (or similar) to the policy assignment's principal ID.",
+          "strongType": "Microsoft.Storage/storageAccounts"
+        }
+      },
+      "logAnalyticsWorkspaceId": {
+        "type": "string",
+        "metadata": {
+          "displayName": "Log Analytics workspace",
+          "description": "Select Log Analytics workspace from dropdown list. If this workspace is outside of the scope of the assignment you must manually grant 'Log Analytics Contributor' permissions (or similar) to the policy assignment's principal ID.",
+          "strongType": "omsWorkspace"
+        }
+      },
+      "networkWatcherResourceGroupName": {
+        "type": "string",
+        "metadata": {
+          "displayName": "Network Watcher Resource Group Name",
+          "description": "The resource group name where the Network Watcher is located"
+        },
+        "defaultValue": "NetworkWatcherRG"
+      },
+      "location": {
+        "type": "string",
+        "metadata": {
+          "displayName": "Location",
+          "description": "The location/region where the Flow Logs should be created",
+          "strongType": "location"
+        }
+      },
+      "retention": {
+        "type": "integer",
+        "metadata": {
+          "displayName": "Retention (days)",
+          "description": "Retention period in days. Default is 0 which stands for permanent retention. Can be any Integer from 1 to 365"
+        },
+        "defaultValue": 7
+      },
+      "trafficAnalyticsInterval": {
+        "type": "integer",
+        "metadata": {
+          "displayName": "Traffic Analytics processing interval (mins)",
+          "description": "Traffic Analytics processing interval in minutes. If Traffic Analytics is enabled, you can select processing interval as 10 minutes or 60 minutes."
+        },
+        "allowedValues": [
+          10,
+          60
+        ],
+        "defaultValue": 60
+      },
+      "flowAnalyticsEnabled": {
+        "type": "boolean",
+        "metadata": {
+          "displayName": "Enable Traffic Analytics",
+          "description": "Boolean flag to enable/disable traffic analytics."
+        },
+        "defaultValue": true
+      },
+      "effect": {
+        "type": "string",
+        "metadata": {
+          "displayName": "Effect",
+          "description": "Enable or disable the execution of the policy"
+        },
+        "allowedValues": [
+          "DeployIfNotExists",
+          "Disabled"
+        ],
+        "defaultValue": "DeployIfNotExists"
+      }
+    },
+    "policyRule": {
+      "if": {
+        "allOf": [
+          {
+            "field": "type",
+            "equals": "Microsoft.Network/virtualNetworks"
+          },
+          {
+            "field": "location",
+            "equals": "[parameters('location')]"
+          }
+        ]
+      },
+      "then": {
+        "effect": "[parameters('effect')]",
+        "details": {
+          "type": "Microsoft.Network/networkWatchers/flowLogs",
+          "resourceGroupName": "[if(empty(coalesce(field('Microsoft.Network/virtualNetworks/flowLogs'))), parameters('networkWatcherResourceGroupName'), split(first(field('Microsoft.Network/virtualNetworks/flowLogs[*].id')), '/')[4])]",
+          "name": "[if(empty(coalesce(field('Microsoft.Network/virtualNetworks/flowLogs[*].id'))), 'null/null', concat(split(first(field('Microsoft.Network/virtualNetworks/flowLogs[*].id')), '/')[8], '/', split(first(field('Microsoft.Network/virtualNetworks/flowLogs[*].id')), '/')[10]))]",
+          "deploymentScope": "subscription",
+          "existenceCondition": {
+            "field": "Microsoft.Network/networkWatchers/flowLogs/enabled",
+            "equals": "true"
+          },
+          "roleDefinitionIds": [
+            "/providers/microsoft.authorization/roleDefinitions/749f88d5-cbae-40b8-bcfc-e573ddc772fa",
+            "/providers/microsoft.authorization/roleDefinitions/92aaf0da-9dab-42b6-94a3-d43ce8d16293",
+            "/providers/microsoft.authorization/roleDefinitions/17d1049b-9a84-46fb-8f53-869881c3d3ab",
+            "/providers/microsoft.authorization/roleDefinitions/b24988ac-6180-42a0-ab88-20f7382dd24c"
+          ],
+          "deployment": {
+            "location": "australiaeast",
+            "properties": {
+              "mode": "Incremental",
+              "parameters": {
+                "virtualNetworkName": {
+                  "value": "[field('name')]"
+                },
+                "resourceGroupName": {
+                  "value": "[resourceGroup().name]"
+                },
+                "location": {
+                  "value": "[field('location')]"
+                },
+                "storageAccountResourceId": {
+                  "value": "[parameters('storageAccountResourceId')]"
+                },
+                "logAnalyticsWorkspaceId": {
+                  "value": "[parameters('logAnalyticsWorkspaceId')]"
+                },
+                "networkWatcherResourceGroupName": {
+                  "value": "[parameters('networkWatcherResourceGroupName')]"
+                },
+                "retention": {
+                  "value": "[parameters('retention')]"
+                },
+                "flowAnalyticsEnabled": {
+                  "value": "[parameters('flowAnalyticsEnabled')]"
+                },
+                "trafficAnalyticsInterval": {
+                  "value": "[parameters('trafficAnalyticsInterval')]"
+                }
+              },
+              "template": {
+                "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+                "contentVersion": "1.0.0.0",
+                "parameters": {
+                  "virtualNetworkName": {
+                    "type": "string"
+                  },
+                  "resourceGroupName": {
+                    "type": "string"
+                  },
+                  "location": {
+                    "type": "string"
+                  },
+                  "storageAccountResourceId": {
+                    "type": "string"
+                  },
+                  "logAnalyticsWorkspaceId": {
+                    "type": "string"
+                  },
+                  "networkWatcherResourceGroupName": {
+                    "type": "string"
+                  },
+                  "retention": {
+                    "type": "int"
+                  },
+                  "flowAnalyticsEnabled": {
+                    "type": "bool"
+                  },
+                  "trafficAnalyticsInterval": {
+                    "type": "int"
+                  }
+                },
+                "variables": {
+                  "flowLogResourceGroupName": "[parameters('networkWatcherResourceGroupName')]",
+                  "networkWatcherName": "[concat('NetworkWatcher_', parameters('location'))]",
+                  "flowLogName": "[concat(take(concat(parameters('virtualNetworkName'), '-', parameters('resourceGroupName')), 72), '-flowlog')]"
+                },
+                "resources": [
+                  {
+                    "type": "Microsoft.Resources/resourceGroups",
+                    "apiVersion": "2021-04-01",
+                    "name": "[variables('flowLogResourceGroupName')]",
+                    "location": "[parameters('location')]",
+                    "properties": {}
+                  },
+                  {
+                    "type": "Microsoft.Resources/deployments",
+                    "apiVersion": "2021-04-01",
+                    "name": "[concat('deploy-flowlog-', parameters('virtualNetworkName'))]",
+                    "resourceGroup": "[variables('flowLogResourceGroupName')]",
+                    "dependsOn": [
+                      "[resourceId('Microsoft.Resources/resourceGroups', variables('flowLogResourceGroupName'))]"
+                    ],
+                    "properties": {
+                      "mode": "Incremental",
+                      "template": {
+                        "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                        "contentVersion": "1.0.0.0",
+                        "resources": [
+                          {
+                            "type": "Microsoft.Network/networkWatchers",
+                            "apiVersion": "2021-08-01",
+                            "name": "[variables('networkWatcherName')]",
+                            "location": "[parameters('location')]",
+                            "properties": {}
+                          },
+                          {
+                            "type": "Microsoft.Network/networkWatchers/flowLogs",
+                            "apiVersion": "2021-08-01",
+                            "name": "[concat(variables('networkWatcherName'), '/', variables('flowLogName'))]",
+                            "location": "[parameters('location')]",
+                            "dependsOn": [
+                              "[variables('networkWatcherName')]"
+                            ],
+                            "properties": {
+                              "targetResourceId": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', parameters('resourceGroupName'), '/providers/Microsoft.Network/virtualNetworks/', parameters('virtualNetworkName'))]",
+                              "storageId": "[parameters('storageAccountResourceId')]",
+                              "enabled": true,
+                              "retentionPolicy": {
+                                "enabled": "[if(equals(parameters('retention'), 0), false(), true())]",
+                                "days": "[parameters('retention')]"
+                              },
+                              "format": {
+                                "type": "JSON",
+                                "version": 2
+                              },
+                              "flowAnalyticsConfiguration": {
+                                "networkWatcherFlowAnalyticsConfiguration": {
+                                  "enabled": "[parameters('flowAnalyticsEnabled')]",
+                                  "trafficAnalyticsInterval": "[parameters('trafficAnalyticsInterval')]",
+                                  "workspaceId": "[if(parameters('flowAnalyticsEnabled'), reference(parameters('logAnalyticsWorkspaceId'), '2020-08-01').customerId, json('null'))]",
+                                  "workspaceRegion": "[if(parameters('flowAnalyticsEnabled'), reference(parameters('logAnalyticsWorkspaceId'), '2020-08-01', 'Full').location, json('null'))]",
+                                  "workspaceResourceId": "[if(parameters('flowAnalyticsEnabled'), parameters('logAnalyticsWorkspaceId'), json('null'))]"
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ],
+                "outputs": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

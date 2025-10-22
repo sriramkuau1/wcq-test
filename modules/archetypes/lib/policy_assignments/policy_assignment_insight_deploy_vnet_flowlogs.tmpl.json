@@ -1,0 +1,47 @@
+{
+  "type": "Microsoft.Authorization/policyAssignments",
+  "apiVersion": "2024-04-01",
+  "name": "Deploy-VNet-FlowLogs",
+  "location": "${default_location}",
+  "dependsOn": [],
+  "identity": {
+    "type": "SystemAssigned"
+  },
+  "properties": {
+    "description": "Configure Virtual Network to enable Flow Log and Traffic Analytics for all virtual networks in the specified region.",
+    "displayName": "Deploy VNet Flow Logs and Traffic Analytics",
+    "policyDefinitionId": "${root_scope_resource_id}/providers/Microsoft.Authorization/policyDefinitions/Deploy-VNet-FlowLogs",
+    "enforcementMode": "Default",
+    "nonComplianceMessages": [
+      {
+        "message": "Virtual Networks must have Flow Logs and Traffic Analytics enabled for network monitoring and security."
+      }
+    ],
+    "parameters": {
+      "storageAccountResourceId": {
+        "value": "/subscriptions/00000000-0000-0000-0000-000000000000/resourcegroups/${root_scope_id}-mgmt/providers/Microsoft.Storage/storageAccounts/${root_scope_id}flowlogssa"
+      },
+      "logAnalyticsWorkspaceId": {
+        "value": "/subscriptions/00000000-0000-0000-0000-000000000000/resourcegroups/${root_scope_id}-mgmt/providers/Microsoft.OperationalInsights/workspaces/${root_scope_id}-la"
+      },
+      "networkWatcherResourceGroupName": {
+        "value": "NetworkWatcherRG"
+      },
+      "location": {
+        "value": "${default_location}"
+      },
+      "retention": {
+        "value": 90
+      },
+      "trafficAnalyticsInterval": {
+        "value": 60
+      },
+      "flowAnalyticsEnabled": {
+        "value": true
+      },
+      "effect": {
+        "value": "DeployIfNotExists"
+      }
+    }
+  }
+}

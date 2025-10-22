@@ -22,6 +22,7 @@
       "Enforce-Resource-Locks",
       "Enforce-Governance",
       "Deploy-ServiceHealth",
+      "Deploy-VNet-FlowLogs",
       "Deploy-Diag-Security"
       ],
     "policy_definitions": [
@@ -181,6 +182,7 @@
       "Lock-Virtual-Network-Gateways",
       "Lock-Virtual-Networks",
       "Enforce-Subscription-Tag",
+      "Deploy-VNet-FlowLogs",
       "Deploy-Diag-Security"
     ],
     "policy_set_definitions": [
