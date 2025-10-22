@@ -21,8 +21,9 @@
       "Enforce-Naming-Standards",
       "Enforce-Resource-Locks",
       "Enforce-Governance",
-      "Deploy-ServiceHealth"
-    ],
+      "Deploy-ServiceHealth",
+      "Deploy-Diag-Security"
+      ],
     "policy_definitions": [
       "Append-CreatedDate-Tag",
       "Append-AppService-httpsonly",
@@ -179,7 +180,8 @@
       "Lock-User-Assigned-Identity",
       "Lock-Virtual-Network-Gateways",
       "Lock-Virtual-Networks",
-      "Enforce-Subscription-Tag"
+      "Enforce-Subscription-Tag",
+      "Deploy-Diag-Security"
     ],
     "policy_set_definitions": [
       "Audit-UnusedResourcesCostOptimization",
