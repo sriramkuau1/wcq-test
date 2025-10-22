@@ -190,7 +190,7 @@
                     ]
                   }
                 },
-                "equals": 3
+                "equals": "[if(greater(length(parameters('impactedServices')), 0), 3, 2)]"
               }
             ]
           },
@@ -271,20 +271,7 @@
                                 "[subscription().id]"
                               ],
                               "condition": {
-                                "allOf": [
-                                  {
-                                    "field": "category",
-                                    "equals": "ServiceHealth"
-                                  },
-                                  {
-                                    "field": "properties.impactedServices[*].ServiceName",
-                                    "containsAny": "[parameters('impactedServices')]"
-                                  },
-                                  {
-                                    "field": "properties.impactedServices[*].ImpactedRegions[*].RegionName",
-                                    "containsAny": "[parameters('impactedRegions')]"
-                                  }
-                                ]
+                                "allOf": "[concat(createArray(createObject('field', 'category', 'equals', 'ServiceHealth')), if(greater(length(parameters('impactedServices')), 0), createArray(createObject('field', 'properties.impactedServices[*].ServiceName', 'containsAny', parameters('impactedServices'))), createArray()), createArray(createObject('field', 'properties.impactedServices[*].ImpactedRegions[*].RegionName', 'containsAny', parameters('impactedRegions'))))]"
                               },
                               "actions": {
                                 "actionGroups": [
