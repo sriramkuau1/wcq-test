@@ -1,4 +1,3 @@
-
 deploy_core_landing_zones   = false
 deploy_corp_landing_zones   = false
 deploy_online_landing_zones = false
@@ -69,8 +68,75 @@ configure_identity_resources = {
         }
       }
     ]
+    # ADD: Virtual machines configuration for identity servers
+    virtual_machines = {
+      enabled = false
+      config = [
+        {
+          name           = ""
+          size           = "Standard_D2s_v5"
+          location       = "australiaeast"
+          admin_username = "azureadmin"
+          admin_password = ""  # Override by Pipeline secrets
+          network_interface = {
+            subnet_key                    = "Identity"
+            private_ip_address_allocation = "Static"
+            private_ip_address           = ""  # Updated to match subnet range
+            tags = {
+              Role = "DomainController"
+            }
+          }
+          os_disk = {
+            caching              = "ReadWrite"
+            storage_account_type = "Premium_LRS"
+            disk_size_gb         = 128
+          }
+          source_image_reference = {
+            publisher = "MicrosoftWindowsServer"
+            offer     = "WindowsServer"
+            sku       = "2022-Datacenter"
+            version   = "latest"
+          }
+          tags = {
+            Role        = "DomainController"
+            Environment = "Production"
+            Backup      = "Required"
+          }
+        },
+        {
+          name           = ""
+          size           = "Standard_D2s_v5"
+          location       = "australiaeast"
+          admin_username = "azureadmin"
+          admin_password = ""  # Override by Pipeline secrets
+          network_interface = {
+            subnet_key                    = "Identity"
+            private_ip_address_allocation = "Static"
+            private_ip_address           = ""  # Updated to match subnet range
+            tags = {
+              Role = "DomainController"
+            }
+          }
+          os_disk = {
+            caching              = "ReadWrite"
+            storage_account_type = "Premium_LRS"
+            disk_size_gb         = 128
+          }
+          source_image_reference = {
+            publisher = "MicrosoftWindowsServer"
+            offer     = "WindowsServer"
+            sku       = "2022-Datacenter"
+            version   = "latest"
+          }
+          tags = {
+            Role        = "DomainController"
+            Environment = "Production"
+            Backup      = "Required"
+          }
+        }
+      ]
+    }
   }
-
   location = "australiaeast"
   tags = {
     applicationName    = "Platform Identity"

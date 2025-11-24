@@ -315,6 +315,39 @@ variable "configure_identity_resources" {
           })
         })
       ), [])
+      virtual_machines = optional(object({
+        enabled = optional(bool, false)
+        config = optional(list(
+          object({
+            name           = string
+            size           = string
+            location       = optional(string, "")
+            admin_username = string
+            admin_password = string
+            network_interface = object({
+              subnet_key                    = string
+              private_ip_address_allocation = optional(string, "Dynamic")
+              private_ip_address           = optional(string, "")
+              tags                         = optional(map(string), {})
+            })
+            os_disk = optional(object({
+              caching              = optional(string, "ReadWrite")
+              storage_account_type = optional(string, "Premium_LRS")
+              disk_size_gb         = optional(number, 128)
+            }), {})
+            source_image_reference = optional(object({
+              publisher = optional(string, "MicrosoftWindowsServer")
+              offer     = optional(string, "WindowsServer")
+              sku       = optional(string, "2022-Datacenter")
+              version   = optional(string, "latest")
+            }), {})
+            tags = optional(map(string), {})
+          })
+        ), [])
+      }), {
+        enabled = false
+        config = []
+      })
       action_group_name      = optional(string, "")
       action_group_shortname = optional(string, "")
       contact_email          = optional(string, "")

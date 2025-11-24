@@ -41,4 +41,6 @@ resource_type_names = {
   data_collection_rule_change_tracking        = "dcr-change-tracking"
   data_collection_rule_defender_sql           = "dcr-defender-sql"
   user_assigned_managed_identity              = "uami"
+  virtual_machine                             = "vm"
+  network_interface                           = "nic"
 }

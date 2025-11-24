@@ -97,3 +97,23 @@ locals {
     if resource.managed_by_module
   }
 }
+
+# The following locals are used to build the map of Network
+# Interfaces to deploy.
+locals {
+  azurerm_network_interface_identity = {
+    for resource in module.identity_resources.configuration.azurerm_network_interface :
+    resource.resource_id => resource
+    if resource.managed_by_module
+  }
+}
+
+# The following locals are used to build the map of Virtual
+# Machines to deploy.
+locals {
+  azurerm_windows_virtual_machine_identity = {
+    for resource in module.identity_resources.configuration.azurerm_windows_virtual_machine :
+    resource.resource_id => resource
+    if resource.managed_by_module
+  }
+}

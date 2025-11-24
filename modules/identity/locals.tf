@@ -35,6 +35,8 @@ locals {
   custom_settings_network_security_groups = try(local.custom_settings.azurerm_network_security_group["identity"], local.empty_map)
   custom_settings_route_tables            = try(local.custom_settings.azurerm_route_table["identity"], local.empty_map)
   custom_settings_key_vault               = try(local.custom_settings.azurerm_key_vault["identity"], local.empty_map)
+  custom_settings_network_interfaces      = try(local.custom_settings.azurerm_network_interface["identity"], local.empty_map)
+  custom_settings_virtual_machine         = try(local.custom_settings.azurerm_windows_virtual_machine["identity"], local.empty_map)
 }
 
 # Logic to determine whether specific resources
@@ -67,6 +69,15 @@ locals {
     local.deploy_network &&
     spoke_network.config.vwan_hub_network_id != local.empty_string
   }
+}
+
+locals {
+  virtual_machines_by_name = {
+    for vm in local.settings.virtual_machines.config :
+    vm.name => vm
+  }
+
+  deploy_identity_server = local.deploy_identity && local.settings.virtual_machines.enabled
 }
 
 # Archetype configuration overrides
@@ -232,6 +243,11 @@ locals {
     for subnets in local.subnets_by_virtual_network :
     subnets
   ])
+  # ADD THIS: Create subnet resource ID mapping for NICs to reference
+  subnet_resource_id = {
+    for subnet in local.azurerm_subnet :
+    subnet.name => subnet.resource_id
+  }
 }
 
 # Configuration settings for resource type:
@@ -392,6 +408,58 @@ locals {
   }
 }
 
+# Configuration settings for resource types:
+#  - azurerm_network_interface
+#  - azurerm_windows_virtual_machine
+locals {
+  # VM names with naming convention
+  virtual_machine_name = {
+    for vm_name, vm in local.virtual_machines_by_name :
+    vm_name => try(
+      local.custom_settings.azurerm_windows_virtual_machine[vm_name].name,
+      vm.name
+    )
+  }
+
+  azurerm_network_interface = [
+    for vm_name, vm in local.virtual_machines_by_name :
+    {
+      resource_id         = "${local.resource_group_resource_id["identity"]}/providers/Microsoft.Network/networkInterfaces/${local.resource_type_names.network_interface}-${local.virtual_machine_name[vm_name]}"
+      managed_by_module   = local.deploy_identity_server
+      name                = "${local.resource_type_names.network_interface}-${local.virtual_machine_name[vm_name]}"
+      resource_group_name = local.resource_group_name["identity"]
+      location            = lookup(local.custom_settings_network_interfaces, "location", local.location)
+      tags                = lookup(local.custom_settings_network_interfaces, "tags", local.tags)
+      ip_configuration = [{
+        name                          = "internal"
+        subnet_id                     = local.subnet_resource_id[vm.network_interface.subnet_key]
+        private_ip_address_allocation = vm.network_interface.private_ip_address_allocation
+        private_ip_address            = vm.network_interface.private_ip_address_allocation == "Static" ? vm.network_interface.private_ip_address : null
+      }]
+    }
+  ]
+
+  azurerm_windows_virtual_machine = [
+    for vm_name, vm in local.virtual_machines_by_name :
+    {
+      resource_id         = "${local.resource_group_resource_id["identity"]}/providers/Microsoft.Compute/virtualMachines/${local.virtual_machine_name[vm_name]}"
+      managed_by_module   = local.deploy_identity_server
+      name                = local.virtual_machine_name[vm_name]
+      resource_group_name = local.resource_group_name["identity"]
+      location            = lookup(local.custom_settings_virtual_machine, "location", local.location)
+      size                = vm.size
+      admin_username      = vm.admin_username
+      admin_password      = vm.admin_password
+      tags                = lookup(local.custom_settings_virtual_machine, "tags", merge(local.tags, vm.tags))
+      network_interface_ids = [
+        "${local.resource_group_resource_id["identity"]}/providers/Microsoft.Network/networkInterfaces/${local.resource_type_names.network_interface}-${local.virtual_machine_name[vm_name]}"
+      ]
+      os_disk                = vm.os_disk
+      source_image_reference = vm.source_image_reference
+    }
+  ]
+}
+
 # Generate the configuration output object for the identity module
 locals {
   module_output = {
@@ -548,6 +616,36 @@ locals {
         }
         managed_by_module = local.deploy_identity
       },
+    ]
+    azurerm_network_interface = [
+      for resource in local.azurerm_network_interface :
+      {
+        resource_id   = resource.resource_id
+        resource_name = resource.name
+        template = {
+          for key, value in resource :
+          key => value
+          if local.deploy_identity &&
+          key != "resource_id" &&
+          key != "managed_by_module"
+        }
+        managed_by_module = local.deploy_identity_server
+      }
+    ]
+    azurerm_windows_virtual_machine = [
+      for resource in local.azurerm_windows_virtual_machine :
+      {
+        resource_id   = resource.resource_id
+        resource_name = resource.name
+        template = {
+          for key, value in resource :
+          key => value
+          if local.deploy_identity &&
+          key != "resource_id" &&
+          key != "managed_by_module"
+        }
+        managed_by_module = local.deploy_identity_server
+      }
     ]
   }
 }

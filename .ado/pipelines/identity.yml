@@ -86,3 +86,5 @@ steps:
         $env:ARM_SUBSCRIPTION_ID = ""
         terraform workspace select identity
         terraform apply -auto-approve -var-file="terraform.identity.tfvars"
+        # if there are VM admin passwords to set, run the following command instead
+        # terraform apply -auto-approve -var-file="terraform.identity.tfvars" configure_identity_resources.virtual_machines[0].admin_password="$env:identityVm01AdminPassword" configure_identity_resources.virtual_machines[1].admin_password="$env:identityVm02AdminPassword"

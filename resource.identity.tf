@@ -281,3 +281,68 @@ resource "azurerm_virtual_hub_connection" "identity" {
   ]
 
 }
+
+# Network interfaces for identity VMs
+resource "azurerm_network_interface" "identity" {
+  for_each = local.azurerm_network_interface_identity
+
+  provider = azurerm.identity
+
+  name                = each.value.template.name
+  resource_group_name = each.value.template.resource_group_name
+  location            = each.value.template.location
+  tags                = each.value.template.tags
+
+  dynamic "ip_configuration" {
+    for_each = each.value.template.ip_configuration
+    content {
+      name                          = ip_configuration.value.name
+      subnet_id                     = ip_configuration.value.subnet_id
+      private_ip_address_allocation = ip_configuration.value.private_ip_address_allocation
+      private_ip_address            = ip_configuration.value.private_ip_address
+    }
+  }
+
+  depends_on = [
+    azurerm_resource_group.identity,
+    azurerm_virtual_network.identity,
+    azurerm_subnet.identity,
+  ]
+}
+
+resource "azurerm_windows_virtual_machine" "identity" {
+  for_each = local.azurerm_windows_virtual_machine_identity
+
+  provider = azurerm.identity
+
+  name                = each.value.template.name
+  resource_group_name = each.value.template.resource_group_name
+  location            = each.value.template.location
+  size                = each.value.template.size
+  admin_username      = each.value.template.admin_username
+  admin_password      = each.value.template.admin_password
+
+  network_interface_ids = each.value.template.network_interface_ids
+
+  os_disk {
+    caching              = each.value.template.os_disk.caching
+    storage_account_type = each.value.template.os_disk.storage_account_type
+    disk_size_gb         = try(each.value.template.os_disk.disk_size_gb, null)  # ADD: disk_size_gb if specified
+  }
+
+  source_image_reference {
+    publisher = each.value.template.source_image_reference.publisher
+    offer     = each.value.template.source_image_reference.offer
+    sku       = each.value.template.source_image_reference.sku
+    version   = each.value.template.source_image_reference.version
+  }
+
+  tags = each.value.template.tags
+
+  depends_on = [
+    azurerm_resource_group.identity,
+    azurerm_virtual_network.identity,
+    azurerm_subnet.identity,
+    azurerm_network_interface.identity,  # ADD: Explicit dependency on NICs
+  ]
+}
