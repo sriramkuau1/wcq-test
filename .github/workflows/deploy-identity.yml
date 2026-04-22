@@ -17,7 +17,7 @@ jobs:
       uses: actions/checkout@v1
       
     - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v2
+      uses: hashicorp/setup-terraform@v4
 
     - name: Concat Vars
       run: cat env/terraform.global.tfvars env/terraform.identity.tfvars > temp.tfvars && cat temp.tfvars > terraform.identity.tfvars
