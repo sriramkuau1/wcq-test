@@ -1,4 +1,4 @@
-name: TEST ONLY - Destroy Archetypes (Do Not Use in Production)
+name: zzz - TEST ONLY - Destroy Archetypes (Do Not Use in Production)
 
 on:
   workflow_dispatch:

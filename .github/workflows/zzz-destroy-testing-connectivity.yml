@@ -1,4 +1,4 @@
-name: TEST ONLY - Destroy Connectivity (Do Not Use in Production)
+name: zzz - TEST ONLY - Destroy Connectivity (Do Not Use in Production)
 
 on:
   workflow_dispatch:

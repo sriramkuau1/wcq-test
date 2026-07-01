@@ -1,4 +1,4 @@
-name: TEST ONLY - Destroy Landing Zones (Do Not Use in Production)
+name: zzz - TEST ONLY - Destroy Landing Zones (Do Not Use in Production)
 
 on:
   workflow_dispatch:
