@@ -1,0 +1,93 @@
+name: TEST ONLY - Destroy Landing Zones (Do Not Use in Production)
+
+on:
+  workflow_dispatch:
+    inputs:
+      landingzone:
+        type: string
+        description: Landing Zone workspace to destroy (testing only)
+        required: true
+      subscriptionId:
+        type: string
+        description: Landing Zone subscription id (testing only)
+        required: true
+      confirm_phrase:
+        type: string
+        description: TESTING ONLY - Type DESTROY-TESTING to continue. Do not use in production.
+        required: true
+      destroy:
+        type: boolean
+        description: Execute terraform destroy apply
+
+permissions:
+  contents: read
+
+jobs:
+  terraform_destroy:
+    name: Test Destroy Landing Zones
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+
+    - name: Checkout Repo
+      uses: actions/checkout@v6
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v4
+
+    - name: Concat Vars
+      run: cat env/terraform.global.tfvars env/terraform.${{ inputs.landingzone }}.lz.tfvars > terraform.${{ inputs.landingzone }}.lz.tfvars
+
+    - name: Terraform init
+      id: init
+      run: terraform init
+      env:
+        ARM_CLIENT_ID: ${{ secrets.CLIENT_ID }}
+        ARM_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+        ARM_TENANT_ID:  ${{ secrets.TENANT_ID }}
+        ARM_SUBSCRIPTION_ID:  ${{ inputs.subscriptionId }}
+
+    - name: Terraform validate
+      id: validate
+      run: terraform validate
+      env:
+        ARM_CLIENT_ID: ${{ secrets.CLIENT_ID }}
+        ARM_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+        ARM_TENANT_ID:  ${{ secrets.TENANT_ID }}
+        ARM_SUBSCRIPTION_ID:  ${{ inputs.subscriptionId }}
+
+    - name: Terraform workspace
+      id: workspace
+      run: terraform workspace select ${{ inputs.landingzone }}
+      env:
+        ARM_CLIENT_ID: ${{ secrets.CLIENT_ID }}
+        ARM_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+        ARM_TENANT_ID:  ${{ secrets.TENANT_ID }}
+        ARM_SUBSCRIPTION_ID:  ${{ inputs.subscriptionId }}
+
+    - name: Terraform plan destroy
+      id: plan_destroy
+      run: terraform plan -destroy -var-file="terraform.${{ inputs.landingzone }}.lz.tfvars"
+      env:
+        ARM_CLIENT_ID: ${{ secrets.CLIENT_ID }}
+        ARM_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+        ARM_TENANT_ID:  ${{ secrets.TENANT_ID }}
+        ARM_SUBSCRIPTION_ID:  ${{ inputs.subscriptionId }}
+
+    - name: Safety check for destroy
+      if: ${{ inputs.destroy }}
+      run: |
+        if [ "${{ inputs.confirm_phrase }}" != "DESTROY-TESTING" ]; then
+          echo "Refusing destroy. This workflow is for testing only and must not be used in production."
+          exit 1
+        fi
+
+    - name: Terraform destroy
+      if: ${{ inputs.destroy && inputs.confirm_phrase == 'DESTROY-TESTING' }}
+      id: destroy
+      run: terraform apply -destroy -auto-approve -var-file="terraform.${{ inputs.landingzone }}.lz.tfvars"
+      env:
+        ARM_CLIENT_ID: ${{ secrets.CLIENT_ID }}
+        ARM_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+        ARM_TENANT_ID:  ${{ secrets.TENANT_ID }}
+        ARM_SUBSCRIPTION_ID:  ${{ inputs.subscriptionId }}
