@@ -55,3 +55,17 @@ tests/modules/test_local
 .github/scripts/Template.Parser.Cli.exe
 
 .infracost
+
+# Sensitive environment tfvars containing real subscription IDs, tenant IDs,
+# and resource identifiers. Keep locally but never commit to a public repo.
+env/terraform.global.tfvars
+env/terraform.identity.tfvars
+env/terraform.management.tfvars
+env/terraform.connectivity.tfvars
+env/terraform.security.tfvars
+
+# Terraform backend config contains storage account name and subscription ID.
+terraform.tf
+
+# Backup files that may contain sensitive values
+*.bkup*
