@@ -124,11 +124,11 @@
           "description": "This policy enforces HTTPS ingress in a Kubernetes cluster. This policy is generally available for Kubernetes Service (AKS), and preview for AKS Engine and Azure Arc enabled Kubernetes. For instructions on using this policy, visit https://aka.ms/kubepolicydoc."
         },
         "type": "String",
-        "defaultValue": "deny",
+        "defaultValue": "Deny",
         "allowedValues": [
-          "audit",
-          "deny",
-          "disabled"
+          "Audit",
+          "Deny",
+          "Disabled"
         ]
       },
       "MySQLEnableSSLDeployEffect": {
