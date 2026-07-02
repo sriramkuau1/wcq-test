@@ -1,7 +1,7 @@
 root_parent_id = "6c637512-c417-4e78-9d62-b61258e4b619"
 tenant_id      = "6c637512-c417-4e78-9d62-b61258e4b619"
 root_id        = "mg-org"
-root_name      = "Contoso"
+root_name      = "WCQ-Insight-deploy"
 
 subscription_id_connectivity = "1336f5fd-b39b-4d15-aa73-7e1ed659b9c1"
 subscription_id_identity     = "1336f5fd-b39b-4d15-aa73-7e1ed659b9c1"
@@ -10,12 +10,12 @@ subscription_id_landingzones = "1336f5fd-b39b-4d15-aa73-7e1ed659b9c1"
 subscription_id_security     = "1336f5fd-b39b-4d15-aa73-7e1ed659b9c1"
 
 resource_type_names = {
-  resource_group                              = "arg"
+  resource_group                              = "rg"
   organization                                = "org"
   virtual_network                             = "vnt"
   virtual_wan                                 = "vwan"
   vwan_hub                                    = "vhub"
-  express_route_gateway                       = "erg"
+  express_route_gateway                       = "vng"
   express_route_circuit                       = "erc"
   network_security_group                      = "nsg"
   virtual_network                             = "vnt"
