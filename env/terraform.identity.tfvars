@@ -153,5 +153,12 @@ configure_identity_resources = {
       australiaeast      = "syd"
       australiasoutheast = "mel"
     }
+    custom_settings_by_resource_type = {
+      azurerm_key_vault = {
+        identity = {
+          name = "akv-org-syd-plat-idam-02" # Renamed: -01 name is globally taken
+        }
+      }
+    }
   }
 }
