@@ -22,7 +22,7 @@ configure_connectivity_resources = {
           bgp_community                = ""
           subnets                      = []
           virtual_network_gateway = {
-            enabled = true
+            enabled = false # Already deployed - disabled to skip costly ExpressRoute Gateway (ErGw2AZ ~$300+/mo) on redeploy
             config = {
               address_prefix           = "10.100.1.0/24"
               gateway_sku_expressroute = "ErGw2AZ"
@@ -39,7 +39,7 @@ configure_connectivity_resources = {
             }
           }
           azure_firewall = {
-            enabled = true
+            enabled = false # Already deployed - disabled to skip costly Azure Firewall (~$900+/mo) on redeploy
             config = {
               address_prefix                = "10.100.0.0/24"
               enable_dns_proxy              = true
@@ -57,7 +57,7 @@ configure_connectivity_resources = {
             }
           }
           bastion = {
-            enabled = true
+            enabled = false # Already deployed - disabled to skip Bastion Standard (~$140+/mo) on redeploy
             config = {
               address_prefix     = "10.100.2.0/24"
               sku                = "Standard" // Basic, Standard, or Premium
