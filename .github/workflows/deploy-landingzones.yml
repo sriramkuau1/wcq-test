@@ -54,7 +54,7 @@ jobs:
         ARM_SUBSCRIPTION_ID:  ${{ inputs.subscriptionId }}
     - name: Terraform workspace
       id: workspace
-      run: terraform workspace select ${{ inputs.landingzone }}
+      run: terraform workspace select ${{ inputs.landingzone }} || terraform workspace new ${{ inputs.landingzone }}
       env:
         ARM_CLIENT_ID: ${{ secrets.CLIENT_ID }}
         ARM_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
