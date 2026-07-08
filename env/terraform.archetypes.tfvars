@@ -1,77 +1,142 @@
 
-deploy_core_landing_zones   = true
-deploy_corp_landing_zones   = true
-deploy_online_landing_zones = true
+# Disable core MGs — custom hierarchy defined in custom_landing_zones below
+deploy_core_landing_zones   = false
+deploy_corp_landing_zones   = false
+deploy_online_landing_zones = false
 
 deploy_connectivity_resources = false
 deploy_identity_resources     = false
 deploy_management_resources   = false
 deploy_landingzones_resources = false
 
-# subscription_id_overrides = {
-#   landingzones-corp = [
-#     ""
-#   ]
-# }
-# subscription_id_overrides = {
-#   landingzones-corp = [
-#     ""
-#   ]
-# }
-archetype_config_overrides = {
-  root = {
-    # access_control = {
-      # Contributor = [
-      #   ""
-      # ]
-    # }
-  }
-  landingzones = {
-    parameters = {
-      Deploy-VM-Backup = {
-        effect            = "deployIfNotExists"
-        exclusionTagName  = "SkipAutoShutdown"
-        exclusionTagValue = ["yes", "no"]
-      }
-      Append-UDR-Route = {
-        nextHopIpAddress = "10.100.0.4"
-      }
-    }
-    enforcement_mode = {}
-  }
-  landingzones-corp = {
-    parameters = {
-      Append-UDR-Route = {
-        nextHopIpAddress = "10.100.0.4"
-      }
-    }
-    enforcement_mode = {}
-  }
-  platform-identity = {
-    parameters = {
-      Append-UDR-Route = {
-        nextHopIpAddress = "10.100.0.4"
-      }
-    }
-    enforcement_mode = {}
-  }
-  platform-management = {
-    parameters = {
-      Append-UDR-Route = {
-        nextHopIpAddress = "10.100.0.4"
-      }
-    }
-    enforcement_mode = {}
-  }
-}
+# Not needed when using custom_landing_zones with default_empty archetypes
+archetype_config_overrides = {}
 
+# Custom MG hierarchy: MG structure only, no governance artifacts
 custom_landing_zones = {
-  mg-org-default = {
-    display_name               = "Default"
-    parent_management_group_id = "mg-org"
+  # Level 1: Root
+  wcq = {
+    display_name               = "WCQ"
+    parent_management_group_id = "6c637512-c417-4e78-9d62-b61258e4b619"
     subscription_ids           = []
     archetype_config = {
-      archetype_id   = "es_sandboxes"
+      archetype_id   = "default_empty"
+      parameters     = {}
+      access_control = {}
+    }
+  }
+
+  # Level 2: Platform
+  wcq-platform = {
+    display_name               = "Platform"
+    parent_management_group_id = "wcq"
+    subscription_ids           = []
+    archetype_config = {
+      archetype_id   = "default_empty"
+      parameters     = {}
+      access_control = {}
+    }
+  }
+
+  # Level 2: Workloads
+  wcq-workloads = {
+    display_name               = "Workloads"
+    parent_management_group_id = "wcq"
+    subscription_ids           = []
+    archetype_config = {
+      archetype_id   = "default_empty"
+      parameters     = {}
+      access_control = {}
+    }
+  }
+
+  # Level 2: Sandbox
+  wcq-sandbox = {
+    display_name               = "Sandbox"
+    parent_management_group_id = "wcq"
+    subscription_ids           = []
+    archetype_config = {
+      archetype_id   = "default_empty"
+      parameters     = {}
+      access_control = {}
+    }
+  }
+
+  # Level 2: Decommissioned
+  wcq-decommissioned = {
+    display_name               = "Decommissioned"
+    parent_management_group_id = "wcq"
+    subscription_ids           = []
+    archetype_config = {
+      archetype_id   = "default_empty"
+      parameters     = {}
+      access_control = {}
+    }
+  }
+
+  # Level 3: Platform children
+  wcq-connectivity = {
+    display_name               = "Connectivity"
+    parent_management_group_id = "wcq-platform"
+    subscription_ids           = []
+    archetype_config = {
+      archetype_id   = "default_empty"
+      parameters     = {}
+      access_control = {}
+    }
+  }
+
+  wcq-management = {
+    display_name               = "Management"
+    parent_management_group_id = "wcq-platform"
+    subscription_ids           = []
+    archetype_config = {
+      archetype_id   = "default_empty"
+      parameters     = {}
+      access_control = {}
+    }
+  }
+
+  wcq-identity = {
+    display_name               = "Identity"
+    parent_management_group_id = "wcq-platform"
+    subscription_ids           = []
+    archetype_config = {
+      archetype_id   = "default_empty"
+      parameters     = {}
+      access_control = {}
+    }
+  }
+
+  wcq-security = {
+    display_name               = "Security"
+    parent_management_group_id = "wcq-platform"
+    subscription_ids           = []
+    archetype_config = {
+      archetype_id   = "default_empty"
+      parameters     = {}
+      access_control = {}
+    }
+  }
+
+  # Level 3: Workload children
+  wcq-internal = {
+    display_name               = "Internal"
+    parent_management_group_id = "wcq-workloads"
+    subscription_ids           = []
+    archetype_config = {
+      archetype_id   = "default_empty"
+      parameters     = {}
+      access_control = {}
+    }
+  }
+
+  wcq-online = {
+    display_name               = "Online"
+    parent_management_group_id = "wcq-workloads"
+    subscription_ids           = []
+    archetype_config = {
+      archetype_id   = "default_empty"
       parameters     = {}
       access_control = {}
     }

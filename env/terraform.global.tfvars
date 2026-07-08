@@ -1,7 +1,7 @@
 root_parent_id = "6c637512-c417-4e78-9d62-b61258e4b619"
 tenant_id      = "6c637512-c417-4e78-9d62-b61258e4b619"
-root_id        = "mg-org"
-root_name      = "WCQ-Insight-deploy"
+root_id        = "wcq"
+root_name      = "WCQ"
 
 subscription_id_connectivity = "1336f5fd-b39b-4d15-aa73-7e1ed659b9c1"
 subscription_id_identity     = "1336f5fd-b39b-4d15-aa73-7e1ed659b9c1"
