@@ -154,8 +154,8 @@ locals {
     lookup(local.spokes_by_location, location, local.result_when_location_missing).enabled
   }
   deploy_management_resource_group = {
-    management = local.enabled
-    alerts     = local.enabled
+    management = local.deploy_resource_group
+    alerts     = local.deploy_resource_group
   }
   deploy_resource_groups = merge(local.deploy_network_resource_group, local.deploy_management_resource_group)
 }

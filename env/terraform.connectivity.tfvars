@@ -232,7 +232,8 @@ configure_management_resources = {
     environment        = "Production"
   }
   advanced = {
-    resource_prefix = "plat-conn"
+    resource_prefix              = "plat-conn"
+    existing_resource_group_name = "rg-syd-plat-conn-connectivity"
     custom_azure_backup_geo_codes = {
       australiaeast      = "syd"
       australiasoutheast = "mel"
@@ -272,7 +273,8 @@ configure_identity_resources = {
     custom_settings_by_resource_type = {
       azurerm_key_vault = {
         identity = {
-          name = "akv-org-syd-plat-idam-03"
+          name                = "akv-org-syd-plat-idam-04"
+          resource_group_name = "rg-syd-plat-conn-connectivity"
         }
       }
     }
