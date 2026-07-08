@@ -272,7 +272,7 @@ configure_identity_resources = {
     custom_settings_by_resource_type = {
       azurerm_key_vault = {
         identity = {
-          name = "akv-org-syd-plat-idam-02"
+          name = "akv-org-syd-plat-idam-03"
         }
       }
     }
