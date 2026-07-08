@@ -57,7 +57,7 @@ provider "azurerm" {
   subscription_id                 = local.subscription_id_identity
   features {
     key_vault {
-      recover_soft_deleted_key_vaults = false
+      recover_soft_deleted_key_vaults = true
     }
   }
   alias = "identity"
