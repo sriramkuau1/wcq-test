@@ -4,82 +4,89 @@ deploy_corp_landing_zones   = false
 deploy_online_landing_zones = false
 
 deploy_connectivity_resources = true
-deploy_identity_resources     = false
-deploy_management_resources   = false
+deploy_identity_resources     = true
+deploy_management_resources   = true
 deploy_landingzones_resources = false
 
 # Configure the connectivity resources settings.
 configure_connectivity_resources = {
   settings = {
-    hub_networks = [
+    # Traditional hub VNet disabled — using Virtual WAN secured hub architecture
+    hub_networks = []
+
+    # Virtual WAN secured hub — Australia East
+    vwan_hub_networks = [
       {
         enabled = true
         config = {
-          address_space                = ["10.100.0.0/16", ]
-          location                     = "australiaeast"
-          link_to_ddos_protection_plan = false
-          dns_servers                  = []
-          bgp_community                = ""
-          subnets                      = []
-          virtual_network_gateway = {
-            enabled = false # Already deployed - disabled to skip costly ExpressRoute Gateway (ErGw2AZ ~$300+/mo) on redeploy
+          address_prefix = "10.100.0.0/23"
+          location       = "australiaeast"
+          sku            = "Standard"
+          routes         = []
+
+          # ExpressRoute Gateway — ErGw2AZ equivalent (2 scale units = 2 Gbps)
+          expressroute_gateway = {
+            enabled = false # Enable when ER circuit is provisioned (~$300+/mo)
             config = {
-              address_prefix           = "10.100.1.0/24"
-              gateway_sku_expressroute = "ErGw2AZ"
-              gateway_sku_vpn          = ""
-              advanced_vpn_settings = {
-                enable_bgp                       = null
-                active_active                    = null
-                private_ip_address_allocation    = ""
-                default_local_network_gateway_id = ""
-                vpn_client_configuration         = []
-                bgp_settings                     = []
-                custom_route                     = []
-              }
+              scale_unit = 2
             }
           }
-          azure_firewall = {
-            enabled = false # Already deployed - disabled to skip costly Azure Firewall (~$900+/mo) on redeploy
+
+          # VPN Gateway — VpnGw2AZ equivalent (2 scale units, AZ-enabled)
+          vpn_gateway = {
+            enabled = false # Enable when S2S VPN to HQ is ready (~$250+/mo)
             config = {
-              address_prefix                = "10.100.0.0/24"
-              enable_dns_proxy              = true
-              dns_servers                   = []
-              sku_tier                      = ""
-              base_policy_id                = ""
-              private_ip_ranges             = []
-              threat_intelligence_mode      = ""
+              bgp_settings       = []
+              routing_preference = "Microsoft Network"
+              scale_unit         = 2
+            }
+          }
+
+          # Azure Firewall Premium — TLS inspection + IDPS
+          azure_firewall = {
+            enabled = false # Enable for secured hub (~$900+/mo + processing)
+            config = {
+              enable_dns_proxy         = true
+              dns_servers              = []
+              sku_tier                 = "Premium"
+              base_policy_id           = "" # EPAC will manage firewall policy lifecycle
+              private_ip_ranges        = []
+              threat_intelligence_mode = "Alert"
               threat_intelligence_allowlist = []
               availability_zones = {
                 zone_1 = true
                 zone_2 = true
                 zone_3 = true
               }
+              # No rule collection groups — EPAC owns all firewall rules
+              firewall_policy_rule_collection_groups = []
             }
           }
-          bastion = {
-            enabled = false # Already deployed - disabled to skip Bastion Standard (~$140+/mo) on redeploy
-            config = {
-              address_prefix     = "10.100.2.0/24"
-              sku                = "Standard" // Basic, Standard, or Premium
-              ip_connect_enabled = true
-              tunneling_enabled  = true
-              availability_zones = {
-                zone_1 = true
-                zone_2 = true
-                zone_3 = true
-              }
-            }
-          }
-          spoke_virtual_network_resource_ids = [
-            # "spoke_resource_id_1",
 
-          ]
-          enable_outbound_virtual_network_peering = true
-          enable_hub_network_mesh_peering         = false
+          # Routing Intent — routes all private + internet traffic through Firewall
+          virtual_hub_routing_intent = {
+            enabled = false # Enable alongside Azure Firewall
+            routing_policies = [
+              {
+                name         = "PrivateTrafficPolicy"
+                destinations = ["PrivateTraffic"]
+                next_hop     = "" # Auto-resolved to Firewall resource ID by module
+              },
+              {
+                name         = "InternetTrafficPolicy"
+                destinations = ["Internet"]
+                next_hop     = "" # Auto-resolved to Firewall resource ID by module
+              }
+            ]
+          }
+
+          # Spoke connections — add spoke VNet resource IDs as they are created
+          spoke_virtual_network_resource_ids        = []
+          secure_spoke_virtual_network_resource_ids = []
+          enable_virtual_hub_connections            = false
         }
       }
     ]
-    vwan_hub_networks = []
     ddos_protection_plan = {
       enabled = false
       config = {
@@ -183,5 +190,151 @@ configure_connectivity_resources = {
       australiaeast      = "syd"
       australiasoutheast = "mel"
     }
+  }
+}
+
+# Consolidated management resources: LAW + solutions only (no spoke VNet, no action group)
+configure_management_resources = {
+  settings = {
+    log_analytics = {
+      enabled = true
+      config = {
+        retention_in_days                                 = 90
+        enable_monitoring_for_vm                          = true
+        enable_monitoring_for_vmss                        = true
+        enable_solution_for_agent_health_assessment       = true
+        enable_solution_for_anti_malware                  = true
+        enable_solution_for_change_tracking               = true
+        enable_solution_for_service_map                   = false
+        enable_solution_for_sql_assessment                = false
+        enable_solution_for_sql_vulnerability_assessment  = false
+        enable_solution_for_sql_advanced_threat_detection = false
+        enable_solution_for_updates                       = true
+        enable_solution_for_vm_insights                   = true
+        enable_solution_for_container_insights            = true
+        enable_sentinel                                   = false
+      }
+    }
+    spoke_networks       = []
+    action_group_name      = ""
+    action_group_shortname = ""
+    contact_email          = ""
+  }
+
+  location = "australiaeast"
+  tags = {
+    applicationName    = "Platform Management"
+    contactEmail       = "test@test.com"
+    costCenter         = ""
+    criticality        = "Tier0"
+    dataClassification = "Internal"
+    owner              = "Core Infrastructure"
+    environment        = "Production"
+  }
+  advanced = {
+    resource_prefix = "plat-conn"
+    custom_azure_backup_geo_codes = {
+      australiaeast      = "syd"
+      australiasoutheast = "mel"
+    }
+  }
+}
+
+# Consolidated identity resources: Key Vault only (no spoke VNet, no VMs)
+configure_identity_resources = {
+  settings = {
+    identity = {
+      enabled = true
+      config = {
+        key_vault = {
+          purge_protection_enabled = true
+        }
+      }
+    }
+    spoke_networks = []
+  }
+  location = "australiaeast"
+  tags = {
+    applicationName    = "Platform Identity"
+    contactEmail       = "test@test.com"
+    costCenter         = ""
+    criticality        = "Tier0"
+    dataClassification = "Internal"
+    owner              = "Core Infrastructure"
+    environment        = "Production"
+  }
+  advanced = {
+    resource_prefix = "plat-conn"
+    custom_azure_backup_geo_codes = {
+      australiaeast      = "syd"
+      australiasoutheast = "mel"
+    }
+    custom_settings_by_resource_type = {
+      azurerm_key_vault = {
+        identity = {
+          name = "akv-org-syd-plat-idam-02"
+        }
+      }
+    }
+  }
+}
+
+# -----------------------------------------------------------------------------
+# VPN Sites — remote endpoints outside CAF module scope
+# -----------------------------------------------------------------------------
+vpn_sites = {
+  wcq_hq = {
+    enabled       = false # Enable when VPN Gateway is deployed and HQ details confirmed
+    name          = "vpnsite-wcq-hq-01"
+    location      = "australiaeast"
+    device_vendor = "" # e.g. "Cisco", "Fortinet", "Palo Alto"
+    device_model  = ""
+    address_cidrs = [] # e.g. ["192.168.0.0/16"] — HQ on-prem address space
+    link = [
+      {
+        name          = "link-wcq-hq-primary"
+        ip_address    = "0.0.0.0" # Replace with actual HQ public IP
+        speed_in_mbps = 100
+        bgp           = [] # Add BGP config if using dynamic routing
+      }
+    ]
+    tags = {
+      environment = "Production"
+      purpose     = "S2S VPN to WCQ Head Office"
+    }
+  }
+}
+
+# -----------------------------------------------------------------------------
+# VPN Connections — S2S tunnels outside CAF module scope
+# -----------------------------------------------------------------------------
+vpn_connections = {
+  wcq_hq = {
+    enabled       = false # Enable when VPN site is deployed and PSK is agreed
+    name          = "vpnconn-wcq-hq-01"
+    vpn_site_key  = "wcq_hq"
+    internet_security_enabled = true # Route internet traffic through Firewall via Routing Intent
+    vpn_link = [
+      {
+        name                = "link-wcq-hq-primary"
+        vpn_site_link_index = 0
+        bandwidth_mbps      = 100
+        protocol            = "IKEv2"
+        shared_key          = "" # Set via Key Vault or pipeline secret — never hardcode
+        bgp_enabled         = false
+        ipsec_policy = [
+          {
+            sa_lifetime_sec  = 27000
+            sa_data_size_kb  = 102400000
+            ipsec_encryption = "AES256"
+            ipsec_integrity  = "SHA256"
+            ike_encryption   = "AES256"
+            ike_integrity    = "SHA256"
+            dh_group         = "DHGroup14"
+            pfs_group        = "PFS14"
+          }
+        ]
+      }
+    ]
   }
 }
