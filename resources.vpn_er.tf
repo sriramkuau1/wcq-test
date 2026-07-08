@@ -155,8 +155,8 @@ resource "azurerm_vpn_gateway_connection" "this" {
       dynamic "ipsec_policy" {
         for_each = vpn_link.value.ipsec_policy
         content {
-          sa_lifetime_in_seconds       = ipsec_policy.value.sa_lifetime_sec
-          sa_data_size_in_kb           = ipsec_policy.value.sa_data_size_kb
+          sa_lifetime_sec              = ipsec_policy.value.sa_lifetime_sec
+          sa_data_size_kb              = ipsec_policy.value.sa_data_size_kb
           encryption_algorithm         = ipsec_policy.value.ipsec_encryption
           integrity_algorithm          = ipsec_policy.value.ipsec_integrity
           ike_encryption_algorithm     = ipsec_policy.value.ike_encryption
