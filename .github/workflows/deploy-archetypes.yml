@@ -67,3 +67,21 @@ jobs:
         ARM_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
         ARM_TENANT_ID:  ${{ secrets.TENANT_ID }}
         ARM_SUBSCRIPTION_ID:  ${{ secrets.CONN_SUB_ID }}
+
+    # Grant operator MG Reader on wcq root so portal/CLI visibility works
+    - name: Grant MG Reader to operator
+      if: ${{ inputs.deploy && steps.apply.outcome == 'success' }}
+      run: |
+        az login --service-principal \
+          -u "$ARM_CLIENT_ID" \
+          -p "$ARM_CLIENT_SECRET" \
+          --tenant "$ARM_TENANT_ID" --output none
+        az role assignment create \
+          --assignee "${{ secrets.OPERATOR_OBJECT_ID }}" \
+          --role "Management Group Reader" \
+          --scope "/providers/Microsoft.Management/managementGroups/wcq" \
+          --output none || echo "Role assignment already exists or failed — non-blocking"
+      env:
+        ARM_CLIENT_ID: ${{ secrets.CLIENT_ID }}
+        ARM_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+        ARM_TENANT_ID:  ${{ secrets.TENANT_ID }}
