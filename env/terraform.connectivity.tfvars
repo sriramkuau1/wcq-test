@@ -65,7 +65,7 @@ configure_connectivity_resources = {
 
           # Routing Intent — routes all private + internet traffic through Firewall
           virtual_hub_routing_intent = {
-            enabled = true # TEST: enabled alongside Azure Firewall
+            enabled = false # Disabled — next_hop requires Firewall resource ID which creates circular dependency
             routing_policies = [
               {
                 name         = "PrivateTrafficPolicy"
@@ -216,9 +216,9 @@ configure_management_resources = {
       }
     }
     spoke_networks       = []
-    action_group_name      = ""
-    action_group_shortname = ""
-    contact_email          = ""
+    action_group_name      = "ag-plat-conn-alerts"
+    action_group_shortname = "platconn"
+    contact_email          = "test@test.com"
   }
 
   location = "australiaeast"
