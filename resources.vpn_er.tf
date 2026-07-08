@@ -155,14 +155,14 @@ resource "azurerm_vpn_gateway_connection" "this" {
       dynamic "ipsec_policy" {
         for_each = vpn_link.value.ipsec_policy
         content {
-          sa_lifetime_sec          = ipsec_policy.value.sa_lifetime_sec
-          sa_data_size_kb          = ipsec_policy.value.sa_data_size_kb
-          ipsec_encryption         = ipsec_policy.value.ipsec_encryption
-          ipsec_integrity          = ipsec_policy.value.ipsec_integrity
-          ike_encryption           = ipsec_policy.value.ike_encryption
-          ike_integrity            = ipsec_policy.value.ike_integrity
-          dh_group                 = ipsec_policy.value.dh_group
-          pfs_group                = ipsec_policy.value.pfs_group
+          sa_lifetime_in_seconds       = ipsec_policy.value.sa_lifetime_sec
+          sa_data_size_in_kb           = ipsec_policy.value.sa_data_size_kb
+          encryption_algorithm         = ipsec_policy.value.ipsec_encryption
+          integrity_algorithm          = ipsec_policy.value.ipsec_integrity
+          ike_encryption_algorithm     = ipsec_policy.value.ike_encryption
+          ike_integrity_algorithm      = ipsec_policy.value.ike_integrity
+          dh_group                     = ipsec_policy.value.dh_group
+          pfs_group                    = ipsec_policy.value.pfs_group
         }
       }
     }
