@@ -55,7 +55,11 @@ provider "azurerm" {
 provider "azurerm" {
   resource_provider_registrations = "none"
   subscription_id                 = local.subscription_id_identity
-  features {}
+  features {
+    key_vault {
+      recover_soft_deleted_key_vaults = false
+    }
+  }
   alias = "identity"
 }
 
