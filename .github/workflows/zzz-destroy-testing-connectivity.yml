@@ -39,7 +39,7 @@ jobs:
         # Revert Key Vault name to match what is in state (-03, not -04)
         sed -i 's/akv-org-syd-plat-idam-04/akv-org-syd-plat-idam-03/' terraform.connectivity.tfvars
         # Revert management module to use local.enabled so it owns the RG for destroy
-        sed -i 's/local\.deploy_resource_group/local.enabled/g' modules/management/locals.tf
+        sed -i 's/= local\.deploy_resource_group$/= local.enabled/' modules/management/locals.tf
         echo "--- Overrides stripped for destroy ---"
         grep -n 'existing_resource_group_name\|resource_group_name.*rg-syd\|idam-04' terraform.connectivity.tfvars || echo "Confirmed: no consolidation overrides remain"
         grep 'deploy_management_resource_group' modules/management/locals.tf
