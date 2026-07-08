@@ -65,7 +65,7 @@ configure_connectivity_resources = {
 
           # Routing Intent — routes all private + internet traffic through Firewall
           virtual_hub_routing_intent = {
-            enabled = false # Disabled — next_hop requires Firewall resource ID which creates circular dependency
+            enabled = true # Auto-resolves next_hop to Firewall resource ID via module patch
             routing_policies = [
               {
                 name         = "PrivateTrafficPolicy"

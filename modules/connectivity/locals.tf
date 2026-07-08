@@ -1861,7 +1861,8 @@ locals {
         {
           name         = routing_policy.name
           destinations = routing_policy.destinations
-          next_hop     = routing_policy.next_hop
+          # Auto-resolve to Azure Firewall resource ID when next_hop is empty
+          next_hop     = coalesce(routing_policy.next_hop, local.virtual_hub_azfw_resource_id[location])
 
           # Configure Azure Firewall as next hop
           # next_hop     = local.virtual_hub_azfw_resource_id[location]
