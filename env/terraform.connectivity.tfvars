@@ -26,7 +26,7 @@ configure_connectivity_resources = {
 
           # ExpressRoute Gateway — ErGw2AZ equivalent (2 scale units = 2 Gbps)
           expressroute_gateway = {
-            enabled = false # Enable when ER circuit is provisioned (~$300+/mo)
+            enabled = true # TEST: enabled for deployment test (~$300+/mo)
             config = {
               scale_unit = 2
             }
@@ -34,7 +34,7 @@ configure_connectivity_resources = {
 
           # VPN Gateway — VpnGw2AZ equivalent (2 scale units, AZ-enabled)
           vpn_gateway = {
-            enabled = false # Enable when S2S VPN to HQ is ready (~$250+/mo)
+            enabled = true # TEST: enabled for deployment test (~$250+/mo)
             config = {
               bgp_settings       = []
               routing_preference = "Microsoft Network"
@@ -44,7 +44,7 @@ configure_connectivity_resources = {
 
           # Azure Firewall Premium — TLS inspection + IDPS
           azure_firewall = {
-            enabled = false # Enable for secured hub (~$900+/mo + processing)
+            enabled = true # TEST: enabled for deployment test (~$900+/mo + processing)
             config = {
               enable_dns_proxy         = true
               dns_servers              = []
@@ -65,7 +65,7 @@ configure_connectivity_resources = {
 
           # Routing Intent — routes all private + internet traffic through Firewall
           virtual_hub_routing_intent = {
-            enabled = false # Enable alongside Azure Firewall
+            enabled = true # TEST: enabled alongside Azure Firewall
             routing_policies = [
               {
                 name         = "PrivateTrafficPolicy"
