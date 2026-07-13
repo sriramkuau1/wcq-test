@@ -68,7 +68,7 @@ jobs:
         ARM_TENANT_ID:  ${{ secrets.TENANT_ID }}
         ARM_SUBSCRIPTION_ID:  ${{ secrets.CONN_SUB_ID }}
 
-    # Grant operator MG Reader on wcq root so portal/CLI visibility works
+    # Grant operator MG Reader on wcq and epac-wcq roots so portal/CLI visibility works
     - name: Grant MG Reader to operator
       if: ${{ inputs.deploy && steps.apply.outcome == 'success' }}
       run: |
@@ -76,11 +76,14 @@ jobs:
           -u "$ARM_CLIENT_ID" \
           -p "$ARM_CLIENT_SECRET" \
           --tenant "$ARM_TENANT_ID" --output none
-        az role assignment create \
-          --assignee "${{ secrets.OPERATOR_OBJECT_ID }}" \
-          --role "Management Group Reader" \
-          --scope "/providers/Microsoft.Management/managementGroups/wcq" \
-          --output none || echo "Role assignment already exists or failed — non-blocking"
+        for mg_scope in wcq epac-wcq; do
+          az role assignment create \
+            --assignee-object-id "${{ secrets.OPERATOR_OBJECT_ID }}" \
+            --assignee-principal-type User \
+            --role "Management Group Reader" \
+            --scope "/providers/Microsoft.Management/managementGroups/${mg_scope}" \
+            --output none || echo "Role assignment for ${mg_scope} already exists or failed — non-blocking"
+        done
       env:
         ARM_CLIENT_ID: ${{ secrets.CLIENT_ID }}
         ARM_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
