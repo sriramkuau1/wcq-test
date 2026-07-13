@@ -141,6 +141,138 @@ custom_landing_zones = {
       access_control = {}
     }
   }
+
+  # ─── EPAC Policy Testing Hierarchy ───────────────────────────────────
+  # Separate MG tree for EPAC policy development, validation and testing.
+  # Mirrors the WCQ structure but rooted directly under Tenant Root Group.
+
+  # Level 1: EPAC Root
+  epac-wcq = {
+    display_name               = "EPAC WCQ"
+    parent_management_group_id = "6c637512-c417-4e78-9d62-b61258e4b619"
+    subscription_ids           = []
+    archetype_config = {
+      archetype_id   = "default_empty"
+      parameters     = {}
+      access_control = {}
+    }
+  }
+
+  # Level 2: EPAC Platform
+  epac-wcq-platform = {
+    display_name               = "EPAC Platform"
+    parent_management_group_id = "epac-wcq"
+    subscription_ids           = []
+    archetype_config = {
+      archetype_id   = "default_empty"
+      parameters     = {}
+      access_control = {}
+    }
+  }
+
+  # Level 2: EPAC Workloads
+  epac-wcq-workloads = {
+    display_name               = "EPAC Workloads"
+    parent_management_group_id = "epac-wcq"
+    subscription_ids           = []
+    archetype_config = {
+      archetype_id   = "default_empty"
+      parameters     = {}
+      access_control = {}
+    }
+  }
+
+  # Level 2: EPAC Sandbox
+  epac-wcq-sandbox = {
+    display_name               = "EPAC Sandbox"
+    parent_management_group_id = "epac-wcq"
+    subscription_ids           = []
+    archetype_config = {
+      archetype_id   = "default_empty"
+      parameters     = {}
+      access_control = {}
+    }
+  }
+
+  # Level 2: EPAC Decommissioned
+  epac-wcq-decommissioned = {
+    display_name               = "EPAC Decommissioned"
+    parent_management_group_id = "epac-wcq"
+    subscription_ids           = []
+    archetype_config = {
+      archetype_id   = "default_empty"
+      parameters     = {}
+      access_control = {}
+    }
+  }
+
+  # Level 3: EPAC Platform children
+  epac-wcq-connectivity = {
+    display_name               = "EPAC Connectivity"
+    parent_management_group_id = "epac-wcq-platform"
+    subscription_ids           = []
+    archetype_config = {
+      archetype_id   = "default_empty"
+      parameters     = {}
+      access_control = {}
+    }
+  }
+
+  epac-wcq-management = {
+    display_name               = "EPAC Management"
+    parent_management_group_id = "epac-wcq-platform"
+    subscription_ids           = []
+    archetype_config = {
+      archetype_id   = "default_empty"
+      parameters     = {}
+      access_control = {}
+    }
+  }
+
+  epac-wcq-identity = {
+    display_name               = "EPAC Identity"
+    parent_management_group_id = "epac-wcq-platform"
+    subscription_ids           = []
+    archetype_config = {
+      archetype_id   = "default_empty"
+      parameters     = {}
+      access_control = {}
+    }
+  }
+
+  epac-wcq-security = {
+    display_name               = "EPAC Security"
+    parent_management_group_id = "epac-wcq-platform"
+    subscription_ids           = []
+    archetype_config = {
+      archetype_id   = "default_empty"
+      parameters     = {}
+      access_control = {}
+    }
+  }
+
+  # Level 3: EPAC Workload children
+  epac-wcq-internal = {
+    display_name               = "EPAC Internal"
+    parent_management_group_id = "epac-wcq-workloads"
+    subscription_ids           = []
+    archetype_config = {
+      archetype_id   = "default_empty"
+      parameters     = {}
+      access_control = {}
+    }
+  }
+
+  epac-wcq-online = {
+    display_name               = "EPAC Online"
+    parent_management_group_id = "epac-wcq-workloads"
+    subscription_ids           = []
+    archetype_config = {
+      archetype_id   = "default_empty"
+      parameters     = {}
+      access_control = {}
+    }
+  }
 }
 
 # Configure the management resources settings.
