@@ -49,7 +49,7 @@ configure_management_resources = {
                   name                   = "default-to-firewall"
                   address_prefix         = "0.0.0.0/0"
                   next_hop_type          = "VirtualAppliance"
-                  next_hop_in_ip_address = "" # Update with Azure Firewall private IP after connectivity deploy
+                  next_hop_in_ip_address = "0.0.0.0" # Placeholder — auto-injected from Azure Firewall at deploy time
                 }
               ]
               rules = [

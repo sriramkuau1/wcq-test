@@ -32,7 +32,7 @@ jobs:
         if [ -z "$FW_IP" ]; then
           echo "::warning::Firewall private IP not found — UDR next_hop will be empty"
         else
-          sed -i "s|next_hop_in_ip_address = \"\".*# Update with Azure Firewall private IP after connectivity deploy|next_hop_in_ip_address = \"$FW_IP\" # Auto-injected from Azure Firewall|" terraform.identity.tfvars
+          sed -i "s|next_hop_in_ip_address = \"0.0.0.0\".*# Placeholder|next_hop_in_ip_address = \"$FW_IP\" # Auto-injected from Azure Firewall|" terraform.identity.tfvars
           echo "Injected Firewall private IP: $FW_IP"
         fi
       env:
