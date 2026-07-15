@@ -63,21 +63,10 @@ configure_connectivity_resources = {
             }
           }
 
-          # Routing Intent — routes all private + internet traffic through Firewall
+          # Routing Intent disabled — using UDRs on spoke subnets instead
           virtual_hub_routing_intent = {
-            enabled = true # Auto-resolves next_hop to Firewall resource ID via module patch
-            routing_policies = [
-              {
-                name         = "PrivateTrafficPolicy"
-                destinations = ["PrivateTraffic"]
-                next_hop     = "" # Auto-resolved to Firewall resource ID by module
-              },
-              {
-                name         = "InternetTrafficPolicy"
-                destinations = ["Internet"]
-                next_hop     = "" # Auto-resolved to Firewall resource ID by module
-              }
-            ]
+            enabled = false
+            routing_policies = []
           }
 
           # Spoke connections — add spoke VNet resource IDs as they are created

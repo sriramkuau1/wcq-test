@@ -32,7 +32,14 @@ configure_identity_resources = {
               name                          = "Identity"
               address_prefixes              = ["10.102.0.0/25"]
               bgp_route_propagation_enabled = false
-              routes                        = []
+              routes = [
+                {
+                  name                   = "default-to-firewall"
+                  address_prefix         = "0.0.0.0/0"
+                  next_hop_type          = "VirtualAppliance"
+                  next_hop_in_ip_address = "" # Update with Azure Firewall private IP after connectivity deploy
+                }
+              ]
               rules = [
                 {
                   name                       = "AllowInbound"
