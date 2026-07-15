@@ -73,7 +73,7 @@ configure_management_resources = {
               service_endpoints = []
             }
           ]
-          hub_network_id               = "/subscriptions/1336f5fd-b39b-4d15-aa73-7e1ed659b9c1/resourceGroups/rg-syd-plat-conn-connectivity/providers/Microsoft.Network/virtualNetworks/vnt-syd-plat-conn-10.100.0.0_16"
+          hub_network_id               = "" # vWAN — spokes connect via hub connections, not VNet peering
           allow_virtual_network_access = true
           allow_forwarded_traffic      = true
           use_remote_gateways          = false
