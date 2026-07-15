@@ -4,8 +4,8 @@ deploy_corp_landing_zones   = false
 deploy_online_landing_zones = false
 
 deploy_connectivity_resources = true
-deploy_identity_resources     = true
-deploy_management_resources   = true
+deploy_identity_resources     = false
+deploy_management_resources   = false
 deploy_landingzones_resources = false
 
 # Configure the connectivity resources settings.
@@ -189,94 +189,6 @@ configure_connectivity_resources = {
     custom_azure_backup_geo_codes = {
       australiaeast      = "syd"
       australiasoutheast = "mel"
-    }
-  }
-}
-
-# Consolidated management resources: LAW + solutions only (no spoke VNet, no action group)
-configure_management_resources = {
-  settings = {
-    log_analytics = {
-      enabled = true
-      config = {
-        retention_in_days                                 = 90
-        enable_monitoring_for_vm                          = true
-        enable_monitoring_for_vmss                        = true
-        enable_solution_for_agent_health_assessment       = true
-        enable_solution_for_anti_malware                  = true
-        enable_solution_for_change_tracking               = true
-        enable_solution_for_service_map                   = false
-        enable_solution_for_sql_assessment                = false
-        enable_solution_for_sql_vulnerability_assessment  = false
-        enable_solution_for_sql_advanced_threat_detection = false
-        enable_solution_for_updates                       = true
-        enable_solution_for_vm_insights                   = true
-        enable_solution_for_container_insights            = true
-        enable_sentinel                                   = false
-      }
-    }
-    spoke_networks       = []
-    action_group_name      = "ag-plat-conn-alerts"
-    action_group_shortname = "platconn"
-    contact_email          = "test@test.com"
-  }
-
-  location = "australiaeast"
-  tags = {
-    applicationName    = "Platform Management"
-    contactEmail       = "test@test.com"
-    costCenter         = ""
-    criticality        = "Tier0"
-    dataClassification = "Internal"
-    owner              = "Core Infrastructure"
-    environment        = "Production"
-  }
-  advanced = {
-    resource_prefix              = "plat-conn"
-    existing_resource_group_name = "rg-syd-plat-conn-connectivity"
-    custom_azure_backup_geo_codes = {
-      australiaeast      = "syd"
-      australiasoutheast = "mel"
-    }
-  }
-}
-
-# Consolidated identity resources: Key Vault only (no spoke VNet, no VMs)
-configure_identity_resources = {
-  settings = {
-    identity = {
-      enabled = true
-      config = {
-        key_vault = {
-          purge_protection_enabled = true
-        }
-      }
-    }
-    spoke_networks = []
-  }
-  location = "australiaeast"
-  tags = {
-    applicationName    = "Platform Identity"
-    contactEmail       = "test@test.com"
-    costCenter         = ""
-    criticality        = "Tier0"
-    dataClassification = "Internal"
-    owner              = "Core Infrastructure"
-    environment        = "Production"
-  }
-  advanced = {
-    resource_prefix = "plat-conn"
-    custom_azure_backup_geo_codes = {
-      australiaeast      = "syd"
-      australiasoutheast = "mel"
-    }
-    custom_settings_by_resource_type = {
-      azurerm_key_vault = {
-        identity = {
-          name                = "akv-org-syd-plat-idam-04"
-          resource_group_name = "rg-syd-plat-conn-connectivity"
-        }
-      }
     }
   }
 }
