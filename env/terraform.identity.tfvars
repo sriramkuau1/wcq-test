@@ -156,7 +156,7 @@ configure_identity_resources = {
     custom_settings_by_resource_type = {
       azurerm_key_vault = {
         identity = {
-          name = "akv-org-syd-plat-idam-03" # Renamed: -01 and -02 names are soft-deleted
+          name = "akv-org-syd-plat-idam-05" # -01/-02 soft-deleted, -03/-04 conflict
         }
       }
     }
