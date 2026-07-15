@@ -22,6 +22,25 @@ jobs:
     - name: Concat Vars
       run: cat env/terraform.global.tfvars env/terraform.identity.tfvars > temp.tfvars && cat temp.tfvars > terraform.identity.tfvars
 
+    - name: Inject Firewall private IP into UDR
+      run: |
+        az login --service-principal -u "$ARM_CLIENT_ID" -p "$ARM_CLIENT_SECRET" --tenant "$ARM_TENANT_ID" --output none
+        FW_IP=$(az network firewall list \
+          --resource-group rg-syd-plat-conn-connectivity \
+          --subscription "$ARM_SUBSCRIPTION_ID" \
+          --query "[0].hubIPAddresses.privateIPAddress" -o tsv)
+        if [ -z "$FW_IP" ]; then
+          echo "::warning::Firewall private IP not found — UDR next_hop will be empty"
+        else
+          sed -i "s|next_hop_in_ip_address = \"\".*# Update with Azure Firewall private IP after connectivity deploy|next_hop_in_ip_address = \"$FW_IP\" # Auto-injected from Azure Firewall|" terraform.identity.tfvars
+          echo "Injected Firewall private IP: $FW_IP"
+        fi
+      env:
+        ARM_CLIENT_ID: ${{ secrets.CLIENT_ID }}
+        ARM_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+        ARM_TENANT_ID:  ${{ secrets.TENANT_ID }}
+        ARM_SUBSCRIPTION_ID:  ${{ secrets.CONN_SUB_ID }}
+
     - name: Terraform init
       id: init
       run: terraform init
